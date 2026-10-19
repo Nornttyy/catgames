@@ -20,6 +20,8 @@ test('homepage runs compiled Unity, not the legacy JavaScript game', () => {
   assert.equal(info.editor, '6000.3.20f1');
   assert.deepEqual(info.modes, ['table', 'fish', 'jump', 'race', 'brawl']);
   assert.match(html, /audio-credits\.html/);
+  assert.match(html, /canvas\{position:absolute;inset:0;/, 'canvas must not contribute its backing height to grid layout');
+  assert.match(html, /min-width:0;min-height:0/);
 });
 
 test('every Unity payload exists, matches its SHA256 and has a cache version', () => {
