@@ -64,7 +64,7 @@ namespace CatGames {
     ui.Button(mode==Mode.Race?"去跑酷":"去开打",new Rect(135,797,330,67),StartGame,"#ffda78",29);return;
    }
    if(screen=="result"){
-    ui.Panel(new Rect(58,238,484,476),"#fff8e8");string title=game.result,detail="最高分 "+save.best[(int)mode];
+    ui.Plate(new Rect(58,238,484,476),"#fff4d9");string title=game.result,detail="最高分 "+save.best[(int)mode];
     if(game is RaceGame race){title=race.rank==1?"冲线第一！":race.rank==2?"差一点！":"到终点啦";var runner=race.runners[0];detail="用时 "+runner.finish.ToString("0.0")+" 秒\n最长连过 "+runner.bestClean+" 组    碰撞 "+runner.misses+" 次";}
     if(game is BrawlGame brawl){title=brawl.rank==1?"小霸王！":brawl.cats[0].hp<=0?"先歇一会儿":"时间到";var cat=brawl.cats[0];detail="击倒 "+cat.kills+" 只    伤害 "+cat.damage+"\n坚持 "+Mathf.FloorToInt(brawl.time)+" 秒";}
     if(game is FishGame fish)detail="带回 "+fish.caught+" 条    最高分 "+save.best[1];
@@ -72,7 +72,7 @@ namespace CatGames {
     ui.Text(title,new Rect(85,263,430,58),35);ui.Text(mode==Mode.Brawl||mode==Mode.Race?"第 "+game.rank+" 名":game.score+" 分",new Rect(95,335,410,62),41);ui.Text(detail,new Rect(80,417,440,80),22);
     ui.Button("再来一次",new Rect(125,532,350,65),StartGame,"#ffda78",27);ui.Button("回到客厅",new Rect(125,625,350,57),Home,size:24);return;
    }
-   if(paused){ui.Panel(new Rect(100,278,400,345),"#fff8e8");ui.Text("暂停",new Rect(160,302,280,60),34);ui.Button("继续",new Rect(160,385,280,65),Resume,"#ffda78",27);ui.Button("回到客厅",new Rect(160,470,280,58),Home,size:24);ui.Button(save.muted?"打开声音":"关闭声音",new Rect(215,553,170,42),Mute,size:18);return;}
+   if(paused){ui.Plate(new Rect(100,278,400,345),"#fff4d9");ui.Text("暂停",new Rect(160,302,280,60),34);ui.Button("继续",new Rect(160,385,280,65),Resume,"#ffda78",27);ui.Button("回到客厅",new Rect(160,470,280,58),Home,size:24);ui.Button(save.muted?"打开声音":"关闭声音",new Rect(215,553,170,42),Mute,size:18);return;}
    ui.Button("Ⅱ",new Rect(513,24,60,56),Pause,size:23);
    if(mode==Mode.Jump){jumpButton=ui.Button("按住蓄力",new Rect(130,794,340,70),null,"#ffda78",27,()=>Act("down"),()=>Act("up"));jumpText=jumpButton.GetComponentInChildren<Text>();}
    if(mode==Mode.Race){ui.Button("◀",new Rect(24,785,99,88),null,size:30,down:()=>Act("left"));ui.Button("▶",new Rect(133,785,99,88),null,size:30,down:()=>Act("right"));ui.Button("下钻",new Rect(328,795,104,78),null,size:24,down:()=>Act("slide"));ui.Button("跳跃",new Rect(454,765,122,108),null,"#ffda78",28,down:()=>Act("jump"));}
@@ -93,7 +93,7 @@ namespace CatGames {
   void Update(){if(lastW!=Screen.width||lastH!=Screen.height)Layout();clock+=Time.unscaledDeltaTime;Inputs();if(screen=="play"&&!paused){float dir=moveDirection+(Input.GetKey(KeyCode.D)||Input.GetKey(KeyCode.RightArrow)?1:0)-(Input.GetKey(KeyCode.A)||Input.GetKey(KeyCode.LeftArrow)?1:0);FlushActions();game.Update(Time.deltaTime,Mathf.Clamp(dir,-1,1));FlushActions();foreach(var e in game.events){sound.Cue(e.type,e.kind);if(e.type=="learned")save.taught[(int)mode]=true;}game.events.Clear();if((mode==Mode.Jump&&((JumpGame)game).jumps>0)||(mode==Mode.Race||mode==Mode.Brawl)&&game.time>9)save.taught[(int)mode]=true;
     if(game.ended){int i=(int)mode;save.best[i]=mode==Mode.Race||mode==Mode.Brawl?(save.best[i]==0?game.rank:Mathf.Min(save.best[i],game.rank)):Mathf.Max(save.best[i],game.score);if(mode==Mode.Race||mode==Mode.Brawl){int key=save.RecordIndex(mode),prior=save.matchRecords[key];save.matchRecords[key]=prior==0?game.rank:Mathf.Min(prior,game.rank);}save.Store();screen="result";sound.Scene(false);BuildUI();}
     if(jumpButton){var j=(JumpGame)game;jumpText.text=j.phase=="charge"?"松手起跳":j.phase=="air"?"起跳中":j.phase=="dead"?"没站稳":"按住蓄力";}
-    if(attackButton){var b=(BrawlGame)game;var c=b.cats[0];attackButton.interactable=b.phase=="fight"&&c.hp>0;attackText.text=c.cooldown>0?"冲撞\n"+c.cooldown.ToString("0.0"):"冲撞";dropButton.interactable=c.grounded&&c.surface!=0&&b.phase=="fight";}
+    if(attackButton){var b=(BrawlGame)game;var c=b.cats[0];attackButton.interactable=b.phase=="fight"&&c.hp>0;attackText.text=c.cooldown>0?c.cooldown.ToString("0.0")+"s":"冲撞";dropButton.interactable=c.grounded&&c.surface!=0&&b.phase=="fight";}
    }
    Draw();
   }
@@ -103,13 +103,13 @@ namespace CatGames {
     paint.Cover("menu-nook");paint.Rect(0,0,600,900,"#fff8e8dd");string[] keys=mode==Mode.Race?new[]{"race-track-vertical","race-harbor"}:new[]{"brawl-kitchen","brawl-living"};for(int i=0;i<2;i++){paint.Round(42+i*266,180,250,300,"#fff8e8");paint.Fit(keys[i],new Rect(50+i*266,190,234,280));}
    }else if(screen=="home"||screen=="picker"){
     paint.Cover("menu-nook");if(screen=="home")paint.Fit("title-catgames",new Rect(68,30,464,230));paint.Cat(save.color,321,screen=="home"?510:538,screen=="home"?300:355,MiniGame.Frame("idle",clock));
-    if(screen=="home"){paint.Round(95,610,410,145,"#fff8e8");string[] icons={"mug-side","fish-snack","jump-spikes","race-hurdle","item-pepper"};paint.Fit(icons[(int)mode],new Rect(117,632,95,95));paint.Label(Titles[(int)mode],216,630,262,48,30);int n=save.best[(int)mode];string record=(mode==Mode.Race||mode==Mode.Brawl)?(n>0?"最佳第 "+n+" 名":(mode==Mode.Race?"3 猫同跑 · 人机":"6 猫混战 · 人机")):"纪录 "+n;paint.Label(record,216,686,260,30,18,"#7c7963");for(int i=0;i<5;i++)paint.Oval(252+i*24,773,10,10,i==(int)mode?"#e5a73d":"#b8baa0");}
+    if(screen=="home"){paint.Card(95,610,410,145);paint.Oval(164,682,99,99,"#efe1b9");paint.Oval(164,679,99,99,"#fffdf1");string[] icons={"mug-side","fish-snack","jump-spikes","race-hurdle","item-pepper"};paint.Fit(icons[(int)mode],new Rect(124,638,80,80));paint.Label(Titles[(int)mode],216,630,262,48,30);int n=save.best[(int)mode];string record=(mode==Mode.Race||mode==Mode.Brawl)?(n>0?"最佳第 "+n+" 名":(mode==Mode.Race?"3 猫同跑 · 人机":"6 猫混战 · 人机")):"纪录 "+n;paint.Label(record,216,686,260,30,18,"#7c7963");for(int i=0;i<5;i++){bool selected=i==(int)mode;paint.Round(246+i*24,768,selected?19:10,10,selected?"#b77c32":"#aab89a");}}
    }else if(game!=null){paint.OffsetY=CatPaint.Extra/2;if(game is BrawlGame battle)paint.Zoom=battle.ViewZoom;game.Draw(paint,save.color);paint.OffsetY=0;paint.Zoom=1;paint.Overlay=true;if(screen=="play"&&!paused)DrawHUD();if(paused||screen=="result")paint.Rect(0,0,600,900,"#30362b66");}
    paint.End();
   }
-  void DrawHUD(){paint.Round(25,24,145,80,"#fff8e8f0");paint.Round(235,24,130,66,"#fff8e8f0");string value=game.score.ToString(),time=Mathf.CeilToInt(game.time)+" 秒",caption="捣蛋分";
+  void DrawHUD(){paint.Card(25,24,145,80);paint.Card(235,24,130,66);string value=game.score.ToString(),time=Mathf.CeilToInt(game.time)+" 秒",caption="捣蛋分";
    if(game is JumpGame j){caption="跳跃分";time=Mathf.Max(0,(int)((j.x-140)/20))+" 米";if(!save.taught[2])paint.Label("按住蓄力 · 松手起跳",100,725,400,35,22,"#3b5d40");}
-   if(game is RaceGame r){caption="当前名次";value=r.rank+" / 3";time=Mathf.Max(0,Mathf.RoundToInt((RaceGame.FinishDistance-r.runners[0].x)/20))+" 米";paint.Bar(95,133,410,r.runners[0].x/RaceGame.FinishDistance,"#e9bb56",6);paint.Label(r.runners[0].boost>0?"冲刺中":r.runners[0].clean%3+" / 3",220,163,160,30,22);if(!save.taught[3]&&r.time<9)paint.Label("左右换道 · 上跳下钻",90,736,420,35,22);}
+   if(game is RaceGame r){caption="当前名次";value=r.rank+" / 3";time=Mathf.Max(0,Mathf.RoundToInt((RaceGame.FinishDistance-r.runners[0].x)/20))+" 米";paint.Bar(95,133,410,r.runners[0].x/RaceGame.FinishDistance,"#e9bb56",6);for(int i=0;i<3;i++){paint.Round(255+i*32,166,26,15,"#6b654e");paint.Round(258+i*32,169,20,9,r.runners[0].boost>0||i<r.runners[0].clean%3?"#ffe584":"#e9e6cb");}if(r.runners[0].boost>0)paint.Label("冲刺",235,188,130,27,18);if(!save.taught[3]&&r.time<9)paint.Label("左右换道 · 上跳下钻",90,736,420,35,22);}
    if(game is BrawlGame b){caption="剩余猫咪";value=b.cats.Count(c=>c.hp>0)+" 只";time=Mathf.CeilToInt(b.remaining)+" 秒";paint.Bar(95,133,410,b.cats[0].hp/100f,"#7dd7ad",10);paint.Label(b.cats[0].hp+" / 100",225,157,150,30,19);}
    if(game is FishGame f){caption="偷吃分";paint.Label(f.caught+" / 12",70,788,150,50,27);paint.Label("机会 "+(3-f.mistakes),70,841,150,30,19);if(f.owner!="away")paint.Label(f.seen?"暴露":f.owner=="warning"?"收爪":"警觉",190,142,220,40,24,"#9e4d35");if(f.tutorial!=null)paint.Label(f.tutorial=="reach"?"拖猫爪":"松手收爪",185,695,230,42,24);}
    if(game is TableGame t){paint.Label(t.falls+" / 12",246,811,140,44,25);if(t.tutorial!=null)paint.Label(t.tutorial=="push"?"点杯子":t.tutorial=="hide"?"躲起来":"等等",185,689,230,42,25);if(t.owner!="away")paint.Label(t.seen?"暴露":t.owner=="warning"?"小心":"警觉",200,133,200,40,24,"#a25132");}

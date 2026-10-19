@@ -12,20 +12,20 @@
   ],
   "files": {
     "Build/Web.loader.js": {
-      "sha256": "0e0a5f95fff25cc1fb6bd5289e4d1c86908d87a2f90c2d0e6f5a7fc048c37fee",
+      "sha256": "33d73d69670b8a69a98f719e631863b5fd70a1519350794824666d5a9b88201c",
       "bytes": 47866
     },
     "Build/Web.data.unityweb": {
-      "sha256": "a9de4e4534f1ae9d306f6056758ef2aeb681bb821752a7300e52d6f1bacdf6b3",
-      "bytes": 43643298
+      "sha256": "bb95cc3864f1d27721e8ec9588d891b17273522f36179985fb4ed3de334b3847",
+      "bytes": 43646195
     },
     "Build/Web.framework.js.unityweb": {
-      "sha256": "fe77351dd4757ac9819dafbb73be777e04be3f040d5446bc485275626e8ec9e3",
-      "bytes": 80315
+      "sha256": "8717d3dac5a6e135e4ee59ef6f0ac6dfc88ceb254858070eedb364eab1858bcd",
+      "bytes": 80345
     },
     "Build/Web.wasm.unityweb": {
-      "sha256": "afff4a87e865ea65ef5a356f4e38e19d1692de037a8b81abf3a05023ecf8cec7",
-      "bytes": 3978656
+      "sha256": "75514495f4a5e035016b37d5a2c957305d01b89c9d917386d396ff7db3ef5818",
+      "bytes": 3985001
     }
   }
 }
