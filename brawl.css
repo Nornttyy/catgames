@@ -1,0 +1,32 @@
+#home .game-card[data-game=brawl]{--card:#fbd2c9}
+.brawl-toy:before{background:#f2b399}
+.toy-brawl-cat{position:absolute;width:70%;aspect-ratio:360/310;top:5%;background:url('assets/cat-gray.png') 100% 33.3333%/400% 400% no-repeat}
+.toy-brawl-cat.one{left:-10%;transform:rotate(-8deg)}.toy-brawl-cat.two{right:-13%;background-image:url('assets/cat-orange.png');transform:scaleX(-1) rotate(-8deg)}
+.brawl-toy .icon{position:absolute;width:24px;height:34px;left:42%;top:-12%;fill:#ffe486;stroke:#7e5c34}
+#play.brawl-mode .play-bottom,#play.brawl-mode .table-route{display:none}
+#play.brawl-mode .score strong{font-size:28px}
+#brawl-hud{position:absolute;top:max(110px,calc(env(safe-area-inset-top) + 90px));left:6%;right:6%;pointer-events:none}
+.brawl-meta{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#527264;font-weight:750}
+.brawl-meta strong{font-size:13px;color:#3b5b49}
+#brawl-health{height:13px;background:#4c695841;border:2px solid #3b5745;border-radius:9px;margin-top:6px;overflow:hidden;box-shadow:0 2px 0 #ffffff66}
+#brawl-health i{display:block;width:100%;height:100%;background:linear-gradient(#c3f4b4,#74cd92);border-radius:7px;transition:width .2s ease-out}
+#brawl-health.low i{background:linear-gradient(#ffce96,#ed8c72)}
+#brawl-map{position:relative;height:34px;margin:12px 4px 0;background:repeating-linear-gradient(to top,#fff7dbba 0 10px,#819a7230 10px 11px);border:1px solid #819a72;border-radius:5px}
+#brawl-map i{position:absolute;bottom:0;width:8px;height:8px;border:1px solid #715f47;border-radius:50%;background:#e2ad82;transform:translateX(-50%);transition:opacity .2s}
+#brawl-map .you{width:10px;height:10px;background:#fff0a1;outline:2px solid #fffbe5;z-index:1}
+.item-status{display:flex;gap:8px;pointer-events:none;justify-content:center}
+.item-status span{display:flex;align-items:center;gap:3px;padding:2px 7px 2px 2px;background:#fffae8df;border:1.5px solid #92825b;border-radius:20px;height:34px}
+.item-status img{width:28px;height:28px;object-fit:contain}.item-status b{font-size:12px;min-width:20px;color:#5d694f;font-variant-numeric:tabular-nums}
+#brawl-items{margin-top:15px}#race-items{position:absolute;top:148px;left:0;right:0}
+#brawl-controls{position:absolute;left:4%;right:4%;bottom:max(29px,4%);display:grid;grid-template-columns:1fr 1fr .72fr 1.15fr 1.3fr;gap:8px;align-items:end;pointer-events:auto}
+#brawl-controls button{position:relative;isolation:isolate;min-height:61px;height:8svh;max-height:76px;min-width:44px;border:2px solid var(--ui-edge);border-radius:21px;box-shadow:0 4px 0 #b8a070,0 6px 0 var(--ui-edge);background:linear-gradient(#fffcef,#f4e1b6);font-weight:900;touch-action:none;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:1px;padding:3px;overflow:hidden}
+#brawl-controls button small{font-size:12px}#brawl-controls button .icon{width:28px;height:28px}
+#brawl-controls #brawl-jump{background:linear-gradient(#e4fff0,#a3e1c9);box-shadow:0 4px 0 #79a08a,0 6px 0 var(--ui-edge)}
+#brawl-controls #brawl-attack{height:9svh;min-height:67px;background:linear-gradient(#ffe59a,#ffc96a);box-shadow:0 4px 0 #c58e3e,0 6px 0 var(--ui-edge);font-size:17px}
+#brawl-attack:before{content:'';position:absolute;inset:0;transform:scaleY(calc(1 - var(--ready,1)));transform-origin:bottom;background:#96866565;z-index:-1;pointer-events:none}
+#brawl-controls #brawl-drop{min-height:46px;height:46px;font-size:25px;border-radius:17px;margin-bottom:5px}
+#brawl-controls button:disabled{opacity:.55}#brawl-controls #brawl-attack:disabled{opacity:.82}
+#brawl-controls button.active,#brawl-controls button:active{transform:translateY(4px)!important;box-shadow:0 1px 0 var(--ui-edge)!important}
+#play.brawl-mode .tip{bottom:17%;font-size:12px}
+@media(max-width:360px){#brawl-controls{gap:6px;left:3%;right:3%;grid-template-columns:1fr 1fr .76fr 1.1fr 1.2fr}#brawl-controls button .icon{width:24px;height:24px}#brawl-hud{top:102px}.item-status span{height:29px}.item-status img{width:25px;height:25px}#race-items{top:140px}}
+@media(max-height:680px){#brawl-controls button{min-height:56px;height:56px}#brawl-controls #brawl-attack{min-height:62px;height:62px}#brawl-hud{top:98px}#brawl-map{margin-top:13px}#brawl-items{margin-top:10px}.brawl-meta{font-size:10px}}
