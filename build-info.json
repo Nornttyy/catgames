@@ -1,0 +1,31 @@
+{
+  "engine": "Unity",
+  "editor": "6000.3.20f1",
+  "version": "1.0.0",
+  "gameplay": "native C# / IL2CPP / WebAssembly",
+  "modes": [
+    "table",
+    "fish",
+    "jump",
+    "race",
+    "brawl"
+  ],
+  "files": {
+    "Build/Web.loader.js": {
+      "sha256": "0e0a5f95fff25cc1fb6bd5289e4d1c86908d87a2f90c2d0e6f5a7fc048c37fee",
+      "bytes": 47866
+    },
+    "Build/Web.data.unityweb": {
+      "sha256": "a9de4e4534f1ae9d306f6056758ef2aeb681bb821752a7300e52d6f1bacdf6b3",
+      "bytes": 43643298
+    },
+    "Build/Web.framework.js.unityweb": {
+      "sha256": "fe77351dd4757ac9819dafbb73be777e04be3f040d5446bc485275626e8ec9e3",
+      "bytes": 80315
+    },
+    "Build/Web.wasm.unityweb": {
+      "sha256": "afff4a87e865ea65ef5a356f4e38e19d1692de037a8b81abf3a05023ecf8cec7",
+      "bytes": 3978656
+    }
+  }
+}
