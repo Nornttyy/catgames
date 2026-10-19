@@ -10,7 +10,7 @@ export function resultSummary(mode,s,previous=0,result=''){
   }
   if(mode==='race'){
     const r=s.racers[0],record=previous>0&&s.rank<previous;
-    return {win:s.rank<=3,record,title:s.rank===1?'冲线第一！':s.rank<=3?'挤进前三！':'到终点啦',score:`第 ${s.rank} 名`,
+    return {win:s.rank===1,record,title:s.rank===1?'冲线第一！':s.rank===2?'差一点！':'到终点啦',score:`第 ${s.rank} 名`,
       stats:[['用时',`${r.finishTime.toFixed(1)} 秒`],['最长连过',`${r.bestClean} 组`],['碰撞',`${r.misses} 次`]]};
   }
   const record=s.score>previous,win=result==='cleared';

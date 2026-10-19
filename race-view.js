@@ -1,5 +1,8 @@
-import {RACE,raceFrame} from './race-model.js';
-import {drawItem} from './item-view.js';
+import {RACE,raceFrame} from './race-model.js?v=room-6';
+import {drawItem} from './item-view.js?v=room-6';
+import {mapFor} from './match-options.js?v=room-6';
+import {loopTexture} from './track-loop.js?v=room-6';
+import {drawRaceCatSprite} from './race-tail.js?v=room-6';
 const ink='#353229',colors=['gray','orange','cream','black'];
 export const RACE_VIEW={anchor:680,forwardScale:.8,catSize:152};
 const laneX=lane=>300+(lane-1)*RACE.laneWidth;
@@ -19,7 +22,9 @@ function drawCat(ctx,s,r,images,ratio){
   ctx.save();ctx.translate(x,y+jump);ctx.scale(1,ratio);
   if(r.invincible>0)ctx.globalAlpha=.68+.32*Math.sin(s.age*18)**2;
   if(r.stumble>.4)ctx.rotate(.11*Math.sin((.9-r.stumble)*16));
-  ctx.drawImage(img,frame*256,row*256,256,256,-size/2,-242/256*size,size,size);
+  const moving=s.phase==='run'&&r.finishTime===null;
+  const turn=(r.laneFrom-r.laneTarget)*(1-Math.min(1,r.laneAge/r.laneDuration));
+  drawRaceCatSprite(ctx,img,row,frame,size,r.anim,moving?1:0,moving?turn:0);
   if(r.shield>0){ctx.fillStyle='#90eaff15';ctx.strokeStyle='#b1f0ff';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,-65,63,76,0,0,Math.PI*2);ctx.fill();ctx.stroke();}
   if(r.id===0){ctx.fillStyle='#ffdb58';ctx.strokeStyle=ink;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-9,-129);ctx.lineTo(9,-129);ctx.lineTo(0,-117);ctx.closePath();ctx.fill();ctx.stroke();}
   ctx.restore();
@@ -31,15 +36,11 @@ function drawObstacle(ctx,s,o,lane,images,ratio){
   ctx.drawImage(img,x-w/2,y-h*ratio,w,h*ratio);
 }
 export function drawRaceScene(ctx,s,{images,ratio,reduced=false}){
-  const bg=images['race-track-vertical'];ctx.fillStyle='#f7ce98';ctx.fillRect(0,0,600,900);
+  const source=images[mapFor('race',s.map).art],bg=source?loopTexture(source):null;ctx.fillStyle='#f7ce98';ctx.fillRect(0,0,600,900);
   if(bg){
     const h=600*bg.height/bg.width*ratio,scroll=s.camera*RACE_VIEW.forwardScale*ratio;
     for(let n=Math.floor((-scroll-100)/h);n<(900-scroll)/h+1;n++){
-      const y=n*h+scroll;ctx.save();
-      // Mirrored tile edges meet the same painted edge, avoiding a hard seam.
-      if(Math.abs(n)%2){ctx.translate(0,y+h);ctx.scale(1,-1);ctx.drawImage(bg,0,0,600,h);}
-      else ctx.drawImage(bg,0,y,600,h);
-      ctx.restore();
+      const y=n*h+scroll;ctx.drawImage(bg,0,y,600,h);
     }
   }
   ctx.strokeStyle='#fff8df90';ctx.lineWidth=3;ctx.setLineDash([24*ratio,27*ratio]);ctx.lineDashOffset=-s.camera*RACE_VIEW.forwardScale*ratio;
@@ -53,7 +54,7 @@ export function drawRaceScene(ctx,s,{images,ratio,reduced=false}){
       ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+35+(i%4)*12);ctx.stroke();
     }ctx.restore();
   }
-  for(const distance of [70,RACE.finish]){
+  for(const distance of [120,RACE.finish]){
     const {y}=raceScreenPoint(s,distance,1,ratio);if(y< -70||y>980)continue;
     for(let r=0;r<2;r++)for(let col=0;col<24;col++){ctx.fillStyle=(r+col)%2?'#fff9e9':ink;ctx.fillRect(108+col*16,y+r*16*ratio,16,16*ratio);}
     if(distance===RACE.finish)text(ctx,'终点',300,y-24*ratio,32,'#ffda65');

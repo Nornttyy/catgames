@@ -23,12 +23,13 @@ export function skipTutorial(s){
   s.owner.suspicion=0;s.owner.noise=0;s.owner.rechecking=false;s.owner.recheckQueued=false;s.owner.seen=false;
 }
 export function frameFor(action,t) {
-  if(action==='walk') return 4+Math.floor(t*9)%4;
+  if(action==='walk') return 16+Math.floor(t*12)%8;
   if(action==='push') return 8+Math.min(3,Math.floor(t/.13));
   if(action==='hide') return 12+Math.min(3,Math.floor(t/.12));
   if(action==='rise') return 15-Math.min(3,Math.floor(t/.12));
   const phase=t%4.8;
-  return phase>4.42?2:phase>4.2?1:0;
+  // Exactly one blink frame, held for 75 ms; the rest of idle is motionless.
+  return phase>=4.35&&phase<4.425?2:0;
 }
 export function createGame({tutorial=false,random=Math.random}={}) {
   const coords=[990,936,882,112,166,220,274,328,382,718,772,826];

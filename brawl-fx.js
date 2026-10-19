@@ -45,6 +45,10 @@ export function drawWorldFX(ctx,f,reduced=false,owner=null){
   }else if(f.kind==='pepper'){
     ctx.translate(0,-travel*24);ctx.beginPath();ctx.moveTo(-21,16);ctx.bezierCurveTo(-32,-7,-13,-7,-12,-27);ctx.quadraticCurveTo(-2,-19,-1,-7);ctx.quadraticCurveTo(14,-24,10,-39);ctx.bezierCurveTo(35,-15,28,12,15,20);ctx.closePath();outlined(ctx,'#ffb56f','#a55a38');
     ctx.beginPath();ctx.moveTo(-8,17);ctx.quadraticCurveTo(-13,5,2,-10);ctx.quadraticCurveTo(15,8,8,19);ctx.fillStyle='#fff6b6';ctx.fill();
+  }else if(['ice','glove','feather','speed'].includes(f.kind)){
+    ctx.translate(0,-travel*24);ctx.strokeStyle=f.kind==='ice'?'#8cdaef':f.kind==='glove'?'#ee9280':'#a3ddbf';ctx.lineWidth=4;
+    if(f.kind==='ice'){for(let i=0;i<3;i++){ctx.rotate(Math.PI/3);ctx.beginPath();ctx.moveTo(-22,0);ctx.lineTo(22,0);ctx.moveTo(13,-7);ctx.lineTo(20,0);ctx.lineTo(13,7);ctx.stroke();}}
+    else{ctx.beginPath();ctx.arc(0,0,30+expand*16,-2.6,-.2);ctx.stroke();ctx.beginPath();ctx.arc(0,0,30+expand*16,.5,2.8);ctx.stroke();}
   }else if(f.kind==='bubble'){
     ctx.strokeStyle='#75bdd0';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(0,-1,44+expand*13,56+expand*12,0,-2.9,2.8);ctx.stroke();ctx.strokeStyle='#e6fcff';ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(0,-1,39+expand*13,50+expand*12,0,-2.6,-1.5);ctx.stroke();
   }else{

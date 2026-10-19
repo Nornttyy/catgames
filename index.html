@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#b7e4ce"><meta name="description" content="选一只大眼猫，桌子捣蛋、偷吃鱼干、小猫跳一跳、猫猫跑酷赛、猫咪大乱斗。"><title>小猫游戏多</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="home.css?v=title-edges-1"><link rel="stylesheet" href="jump.css"><link rel="stylesheet" href="race.css"><link rel="stylesheet" href="polish.css?v=kitchen-1"><link rel="stylesheet" href="brawl.css?v=kitchen-1"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#b7e4ce"><meta name="description" content="选一只大眼猫，桌子捣蛋、偷吃鱼干、小猫跳一跳、猫猫跑酷赛、猫咪大乱斗。"><title>小猫游戏多</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="home.css?v=room-6"><link rel="stylesheet" href="jump.css"><link rel="stylesheet" href="race.css"><link rel="stylesheet" href="polish.css?v=room-6"><link rel="stylesheet" href="brawl.css?v=room-6"><link rel="stylesheet" href="loading.css?v=room-6"><link rel="stylesheet" href="match.css?v=room-6"></head>
 <body>
 <main id="game" aria-label="小猫游戏多">
   <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -15,7 +15,12 @@
   </defs></svg>
   <canvas id="scene" aria-label="猫猫和桌子" tabindex="0"></canvas>
   <canvas id="feedback" aria-hidden="true"></canvas>
-  <div id="loading" class="layer"><div class="loading-paw">• • •</div><p id="load-label">加载</p><button id="retry-load" hidden>重试</button></div>
+  <div id="loading" class="layer">
+    <img class="loading-brand" src="assets/title-catgames.png" alt="小猫游戏多">
+    <div class="loading-stage"><button id="loading-cat" aria-label="摸摸小猫"><span class="loading-cat-frame"></span><svg class="loading-cat-fallback" aria-hidden="true"><use href="#icon-paw"/></svg></button><img class="loading-snack" src="assets/fish-snack.png" alt=""></div>
+    <div class="loading-progress"><div class="loading-caption"><span id="load-label">正在开门…</span><b id="load-value">0%</b></div><div id="load-progress" class="loading-track" role="progressbar" aria-label="加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="load-fill"></div></div><button id="retry-load" hidden>重试</button></div>
+    <button id="sound-loading" class="sound">♫ 音乐</button>
+  </div>
   <section id="home" class="layer" hidden>
     <header class="home-brand"><h1><img src="assets/title-catgames.png" alt="小猫游戏多" width="924" height="572" decoding="async" fetchpriority="high"></h1></header>
     <button id="learn" class="round home-help" aria-label="怎么玩">?</button>
@@ -26,7 +31,7 @@
       <button class="game-card" data-game="table" aria-pressed="false"><span class="game-check" aria-hidden="true">✓</span><span class="game-art" aria-hidden="true"><img class="toy-books" src="assets/books-side.png" alt=""><img class="toy-mug" src="assets/mug-side.png" alt=""><i class="toy-lines"></i></span><strong>桌子捣蛋</strong><small data-record="table">纪录 0</small></button>
       <button class="game-card" data-game="fish" aria-pressed="true"><span class="game-check" aria-hidden="true">✓</span><span class="game-art" aria-hidden="true"><img class="toy-fish" src="assets/fish-snack.png" alt=""><i class="toy-lines"></i></span><strong>偷吃鱼干</strong><small data-record="fish">纪录 0</small></button>
       <button class="game-card" data-game="jump" aria-pressed="false"><span class="game-check" aria-hidden="true">✓</span><span class="game-art" aria-hidden="true"><span class="toy-jump-cat"></span><img class="toy-jump-spikes" src="assets/jump-spikes.png" alt=""></span><strong>小猫跳一跳</strong><small data-record="jump">纪录 0</small></button>
-      <button class="game-card" data-game="race" aria-pressed="false"><span class="game-check" aria-hidden="true">✓</span><span class="game-art" aria-hidden="true"><span class="toy-race-cat"></span><i class="race-flag"></i></span><strong>猫猫跑酷赛</strong><small data-record="race">6 猫同跑 · 人机</small></button>
+      <button class="game-card" data-game="race" aria-pressed="false"><span class="game-check" aria-hidden="true">✓</span><span class="game-art" aria-hidden="true"><span class="toy-race-cat"></span><i class="race-flag"></i></span><strong>猫猫跑酷赛</strong><small data-record="race">3 猫同跑 · 人机</small></button>
       <button class="game-card" data-game="brawl" aria-pressed="false"><span class="game-check" aria-hidden="true">✓</span><span class="game-art brawl-toy" aria-hidden="true"><i class="toy-brawl-cat one"></i><i class="toy-brawl-cat two"></i><svg class="icon"><use href="#icon-boost"/></svg></span><strong>猫咪大乱斗</strong><small data-record="brawl">6 猫混战 · 人机</small></button>
     </div>
     <button id="shelf-next" class="shelf-next" aria-label="切换小游戏">›</button>
@@ -52,16 +57,16 @@
     <div id="jump-streak" class="jump-streak" hidden>0 跳</div>
     <button id="jump-press" aria-label="按住蓄力，松开跳跃" hidden>按住蓄力</button>
     <div id="race-hud" hidden>
-      <div class="race-meta"><span>人机竞速</span><strong id="race-distance">500 米</strong></div>
-      <div id="race-progress" role="group" aria-label="六只猫的赛程"><i class="race-progress-fill"></i><i data-racer="0" class="you"></i><i data-racer="1"></i><i data-racer="2"></i><i data-racer="3"></i><i data-racer="4"></i><i data-racer="5"></i><b aria-hidden="true">⚑</b></div>
+      <div class="race-meta"><span>人机竞速</span><strong id="race-distance">900 米</strong></div>
+      <div id="race-progress" role="group" aria-label="三只猫的赛程"><i class="race-progress-fill"></i><i data-racer="0" class="you"></i><i data-racer="1"></i><i data-racer="2"></i><b aria-hidden="true">⚑</b></div>
       <div class="race-chain" aria-label="连续通过三组障碍后冲刺"><span aria-hidden="true"><svg class="icon"><use href="#icon-boost"/></svg></span><div class="chain-cells" aria-hidden="true"><i></i><i></i><i></i></div><strong id="race-clean">0 / 3</strong><small>连过冲刺</small></div>
     </div>
-    <div id="race-items" class="item-status" hidden aria-label="跑酷道具状态"><span data-race-buff="shield" hidden><img src="assets/item-shield.png" alt="护盾"><b></b></span><span data-race-buff="itemBoost" hidden><img src="assets/item-speed.png" alt="加速"><b></b></span></div>
+    <div id="race-items" class="item-status" hidden aria-label="跑酷道具状态"><span data-race-buff="shield" hidden><img src="assets/item-shield.png" alt="护盾"><b></b></span><span data-race-buff="itemBoost" hidden><img src="assets/item-speed.png" alt="加速"><b></b></span><span data-race-buff="magnet" hidden><img src="assets/item-magnet.png" alt="磁铁"><b></b></span><span data-race-buff="feather" hidden><img src="assets/item-feather.png" alt="轻羽"><b></b></span></div>
     <div id="brawl-hud" hidden>
       <div class="brawl-meta"><span>厨房混战 · 人机</span><strong id="brawl-health-text">100 / 100</strong></div>
       <div id="brawl-health" role="meter" aria-label="你的血量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i></i></div>
       <div id="brawl-map" role="group" aria-label="厨房中的猫咪位置"><i data-fighter="0" class="you"></i><i data-fighter="1"></i><i data-fighter="2"></i><i data-fighter="3"></i><i data-fighter="4"></i><i data-fighter="5"></i></div>
-      <div id="brawl-items" class="item-status" aria-label="大乱斗道具状态"><span data-brawl-buff="shield" hidden><img src="assets/item-shield.png" alt="护盾"><b></b></span><span data-brawl-buff="power" hidden><img src="assets/item-pepper.png" alt="冲撞强化"><b></b></span></div>
+      <div id="brawl-items" class="item-status" aria-label="大乱斗道具状态"><span data-brawl-buff="shield" hidden><img src="assets/item-shield.png" alt="护盾"><b></b></span><span data-brawl-buff="power" hidden><img src="assets/item-pepper.png" alt="冲撞强化"><b></b></span><span data-brawl-buff="speed" hidden><img src="assets/item-speed.png" alt="加速"><b></b></span><span data-brawl-buff="glove" hidden><img src="assets/item-glove.png" alt="拳套"><b></b></span><span data-brawl-buff="ice" hidden><img src="assets/item-ice.png" alt="冰棒"><b></b></span><span data-brawl-buff="feather" hidden><img src="assets/item-feather.png" alt="轻羽"><b></b></span></div>
     </div>
     <div id="brawl-controls" hidden>
       <button id="brawl-left" aria-label="向左移动，A或左方向键"><svg class="icon" aria-hidden="true"><use href="#icon-left"/></svg></button>
@@ -76,7 +81,8 @@
     <div class="play-bottom"><div class="walk-buttons"><button id="move-left" class="round" aria-label="向左走">←</button><button id="move-right" class="round" aria-label="向右走">→</button></div><span id="progress">0 / 12</span><button id="hide" class="pill">躲起来</button><button id="retract" class="pill" hidden>收爪 ↶</button></div>
     <button id="skip" class="text-button" hidden>跳过引导</button>
   </section>
+  <section id="match-setup" class="shade" hidden aria-label="选择地图和难度"><div class="paper match-paper"><header><h2 id="match-title">跑一场</h2><button id="match-close" class="round" aria-label="返回主菜单">×</button></header><div id="match-maps" role="group" aria-label="地图"></div><div class="difficulty-choices" role="group" aria-label="难度"><button data-difficulty="casual">休闲</button><button data-difficulty="normal">普通</button><button data-difficulty="hard">困难</button></div><p id="match-record"></p><button id="match-start" class="primary">出发 ▶</button></div></section>
   <section id="paused" class="shade" hidden><div class="paper"><h2>暂停</h2><button id="resume" class="primary">继续</button><button id="pause-home" class="secondary">回到客厅</button><button id="sound-pause" class="text-button sound">关闭声音</button><a href="audio-credits.html" target="_blank" rel="noopener" style="display:block;font-size:12px;color:#776c5e;margin-top:12px">声音署名</a></div></section>
   <section id="result" class="shade" hidden aria-label="本局结算"><div class="confetti" aria-hidden="true"></div><div class="paper result-paper"><div class="result-mark" aria-hidden="true"><svg class="icon"><use href="#icon-cup"/></svg></div><h2 id="result-title"></h2><strong id="result-score">0</strong><span id="result-record" hidden>刷新纪录</span><div id="result-stats"></div><button id="replay" class="primary">再来一次</button><button id="result-home" class="secondary">回到客厅</button></div></section>
-</main><script type="module" src="app.js?v=feedback-audio-1"></script>
+</main><script type="module" src="app.js?v=room-6"></script>
 </body></html>

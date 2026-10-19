@@ -1,29 +1,34 @@
 // x is distance along the course; lane is continuous lateral position (0..2).
-export const RACE={finish:10000,speed:260,gravity:1300,jump:700,slide:1.05,boost:1.65,boostSpeed:70,countdown:3,laneWidth:128,laneTime:.2,bodyHalfWidth:29,bodyHalfDepth:18};
+import {DIFFICULTIES,difficultyKey,mapFor} from './match-options.js?v=room-6';
+export const RACE={finish:18000,speed:340,gravity:1300,jump:700,slide:1.05,boost:1.65,boostSpeed:85,countdown:3,laneWidth:128,laneTime:.18,bodyHalfWidth:29,bodyHalfDepth:18};
 const colors=['gray','orange','cream','black'];
-export function makeCourse(random=Math.random){
-  const obstacles=[];let x=780;
+export function makeCourse(random=Math.random,difficulty='normal'){
+  const config=DIFFICULTIES[difficultyKey(difficulty)],obstacles=[];let x=1100;
   for(let i=0;x<RACE.finish-500;i++){
-    const lanes=[null,null,null],safe=Math.floor(random()*3);
+    const lanes=[null,null,null],safe=Math.min(2,Math.floor(random()*3)),kind=random()<.55?'hurdle':'gate';
     if(i<2)lanes[1]=i===0?'hurdle':'gate';
-    else for(let lane=0;lane<3;lane++)if(lane!==safe)lanes[lane]=random()<.55?'hurdle':'gate';
-    obstacles.push({id:i,x,lanes});x+=i<3?570:440+random()*130;
+    else if(config.racePattern==='single')lanes[safe]=kind;
+    else if(config.racePattern==='combo'&&i%6<2)lanes.fill(i%6===0?'hurdle':'gate');
+    else for(let lane=0;lane<3;lane++)if(lane!==safe)lanes[lane]=lane%2?kind:(kind==='gate'?'hurdle':'gate');
+    // Identical speed, course length and spacing: difficulty is the required action sequence.
+    obstacles.push({id:i,x,lanes});x+=650+random()*120;
   }
   return obstacles;
 }
-export function createRace({color='gray',tutorial=true,random=Math.random}={}){
-  const racers=Array.from({length:6},(_,id)=>({id,bot:id!==0,color:id?colors[(id-1)%4]:color,
-    x:id?[20,300,440,190,-40][id-1]:120,y:0,vy:0,lane:id?(id-1)%3:1,laneTarget:id?(id-1)%3:1,laneFrom:id?(id-1)%3:1,laneAge:1,laneDuration:RACE.laneTime,
-    speed:id?[245,257,252,254,248][id-1]:RACE.speed,skill:id?[.87,.92,.82,.87,.94][id-1]:1,
-    slide:0,slideCooldown:0,stumble:0,invincible:0,boost:0,anim:id*.13,clean:0,bestClean:0,misses:0,passed:0,
-    hit:new Set(),next:0,plan:null,finishTime:null,jumpBuffer:0,shield:0,itemBoost:0}));
-  const obstacles=makeCourse(random),items=obstacles.filter((_,i)=>i%3===1).map((o,i)=>({id:i,x:o.x+225,lane:i%3,kind:i%2?'speed':'shield',taken:false}));
+export function createRace({color='gray',tutorial=true,random=Math.random,difficulty='normal',map='garden'}={}){
+  difficulty=difficultyKey(difficulty);const config=DIFFICULTIES[difficulty],botColors=colors.filter(c=>c!==color);
+  const racers=Array.from({length:3},(_,id)=>({id,bot:id!==0,color:id?botColors[id-1]:color,
+    x:120,y:0,vy:0,lane:[1,0,2][id],laneTarget:[1,0,2][id],laneFrom:[1,0,2][id],laneAge:1,laneDuration:RACE.laneTime,
+    speed:RACE.speed,skill:id?.94:1,
+    slide:0,slideCooldown:0,stumble:0,invincible:0,boost:0,anim:id*.13,clean:0,bestClean:0,misses:0,passed:0,land:0,
+    hit:new Set(),next:0,plan:null,finishTime:null,jumpBuffer:0,shield:0,itemBoost:0,magnet:0,feather:0}));
+  const obstacles=makeCourse(random,difficulty),kinds=['shield','speed','magnet','feather'],items=obstacles.filter((_,i)=>i%2===0).map((o,i)=>({id:i,x:o.x+240,lane:i%3,kind:kinds[i%kinds.length],taken:false}));
   return {status:'play',paused:false,phase:'countdown',countdown:RACE.countdown,time:0,age:0,camera:120,
-    racers,obstacles,items,random,events:[],fx:[],rank:1,tutorial,learnedJump:false,learnedSlide:false,learnedLane:false,flash:0,result:null};
+    racers,obstacles,items,random,config,difficulty,map:mapFor('race',map).id,events:[],fx:[],rank:1,tutorial,learnedJump:false,learnedSlide:false,learnedLane:false,flash:0,result:null};
 }
 export function takeRaceItem(s,r,item){
   if(item.taken||r.finishTime!==null)return false;
-  item.taken=true;if(item.kind==='shield')r.shield=10;else r.itemBoost=2.6;
+  item.taken=true;if(item.kind==='shield')r.shield=10;else if(item.kind==='speed')r.itemBoost=2.6;else if(item.kind==='magnet')r.magnet=7;else if(item.kind==='feather')r.feather=8;
   if(r.id===0)s.events.push({type:'pickup',kind:item.kind});
   s.fx.push({kind:'boost',x:r.x,lane:r.lane,age:0,life:.45});return true;
 }
@@ -79,8 +84,8 @@ export function raceContact(r,o){
 function planBot(s,r){
   const o=nextRaceObstacle(s,r);if(!o)return;
   if(r.plan?.id!==o.id){
-    const kind=o.lanes[r.laneTarget],mistake=s.random()>r.skill,change=s.random()<.62;
-    r.plan={id:o.id,done:false,kind,mistake,change,lead:change?.9:.48,target:o.lanes.findIndex(k=>!k)};
+    const kind=o.lanes[r.laneTarget],mistake=s.random()>r.skill,target=o.lanes.findIndex(k=>!k),change=target>=0&&s.random()<.62;
+    r.plan={id:o.id,done:false,kind,mistake,change,lead:change?.9:.48,target};
   }
   const p=r.plan,speed=r.speed+((r.boost>0||r.itemBoost>0)?RACE.boostSpeed:0);
   if(!p.done&&o.x-r.x<=speed*p.lead){
@@ -105,15 +110,15 @@ function step(s,dt){
   s.time+=dt;
   for(const r of s.racers){
     if(r.finishTime!==null)continue;
-    for(const key of ['slide','slideCooldown','stumble','invincible','boost','jumpBuffer','shield','itemBoost'])r[key]=Math.max(0,r[key]-dt);
+    for(const key of ['slide','slideCooldown','stumble','invincible','boost','jumpBuffer','shield','itemBoost','magnet','feather','land'])r[key]=Math.max(0,r[key]-dt);
     if(r.bot)planBot(s,r);
     r.laneAge=Math.min(r.laneDuration,r.laneAge+dt);
     const t=r.laneAge/r.laneDuration;r.lane=r.laneFrom+(r.laneTarget-r.laneFrom)*t*t*(3-2*t);
     const speed=(r.speed+((r.boost>0||r.itemBoost>0)?RACE.boostSpeed:0))*(r.stumble>0?.27:1),previous=r.x;
     r.x+=speed*dt;r.anim+=dt*speed/RACE.speed;
-    if(r.y<0||r.vy<0){r.y+=r.vy*dt+.5*RACE.gravity*dt*dt;r.vy+=RACE.gravity*dt;
-      if(r.y>=0){r.y=0;r.vy=0;if(r.jumpBuffer>0)jump(r);}}
-    for(const item of s.items||[])if(!item.taken&&Math.abs(r.x-item.x)<35&&Math.abs(r.lane-item.lane)<.38&&-r.y<125)takeRaceItem(s,r,item);
+    if(r.y<0||r.vy<0){const gravity=r.feather>0?1000:RACE.gravity;r.y+=r.vy*dt+.5*gravity*dt*dt;r.vy+=gravity*dt;
+      if(r.y>=0){r.y=0;r.vy=0;r.land=.08;if(r.id===0)s.events.push({type:'land'});if(r.jumpBuffer>0)jump(r);}}
+    for(const item of s.items||[])if(!item.taken&&Math.abs(r.x-item.x)<(r.magnet>0?145:35)&&Math.abs(r.lane-item.lane)<(r.magnet>0?2.1:.38)&&(r.magnet>0||-r.y<125))takeRaceItem(s,r,item);
     const o=nextRaceObstacle(s,r);
     if(o){
       if(!r.hit.has(o.id)&&r.invincible===0&&raceContact(r,o))collide(s,r,o);

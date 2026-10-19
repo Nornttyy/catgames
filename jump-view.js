@@ -1,6 +1,6 @@
-import {JUMP} from './jump-model.js';
-import {CAT_ART,jumpFrame} from './jump-art.js';
-export {jumpFrame} from './jump-art.js';
+import {JUMP} from './jump-model.js?v=room-6';
+import {CAT_ART,jumpFrame} from './jump-art.js?v=room-6';
+export {jumpFrame} from './jump-art.js?v=room-6';
 export const JUMP_BASE=596;
 function star(ctx,x,y,r,color){ctx.fillStyle=color;ctx.beginPath();for(let n=0;n<8;n++){const a=n*Math.PI/4,rr=n%2?r*.35:r;ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);}ctx.closePath();ctx.fill();}
 export function drawJumpScene(ctx,s,{images,ratio,color,clock}){

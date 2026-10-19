@@ -1,4 +1,4 @@
-import {frameFor} from './model.js';
+import {frameFor} from './model.js?v=room-6';
 
 // Draw the room as a single image with uniform cover fitting, not stretched.
 export function homeLayout(ratio,imageWidth=1024,imageHeight=1536){

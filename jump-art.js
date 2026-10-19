@@ -1,4 +1,4 @@
-import {frameFor} from './model.js';
+import {frameFor} from './model.js?v=room-6';
 
 // Rendering and collision must use the same authored frame, size and anchor.
 export const CAT_ART={frameWidth:360,frameHeight:310,width:150,anchorX:215,anchorY:290};

@@ -1,18 +1,22 @@
-import {COLORS,COVERS,TABLE_Y,WORLD_WIDTH,DROP_DURATION,createGame,update,frameFor,targetProp,moveTo,hideAt,skipTutorial,gazeFor} from './model.js';
-import {PLAY_ZOOM,cameraFor,projectX,unprojectX,targetBounds,propPose,hudCopy,sceneFor} from './view.js';
-import {FISH_HOME,FISH_GOAL,FISH_CAPACITY,FISH_CHANCES,haulValue,createFishGame,beginReach,aimPaw,retractPaw,updateFish,fishHudCopy,fishHidden} from './fish-model.js';
-import {drawFishScene,projectFishY,unprojectFishY} from './fish-view.js';
-import {FISH_PROP_ART} from './fish-props.js';
-import {homeLayout,drawHomeScene} from './home-view.js';
-import {JUMP,createJumpGame,beginJump,releaseJump,cancelJump,updateJump} from './jump-model.js';
-import {drawJumpScene,JUMP_BASE} from './jump-view.js';
-import {RACE,createRace,raceAction,updateRace} from './race-model.js?v=kitchen-1';
-import {drawRaceScene,raceScreenPoint} from './race-view.js?v=kitchen-1';
-import {chainState,resultSummary} from './ui-model.js?v=kitchen-1';
-import {makeBurst,tickParticles,drawParticles} from './feedback.js?v=kitchen-1';
-import {BRAWL,createBrawl,brawlAction,updateBrawl} from './brawl-model.js?v=feedback-audio-1';
-import {drawBrawlScene,BRAWL_BASE} from './brawl-view.js?v=feedback-audio-1';
-import {GameAudio} from './audio.js?v=feedback-audio-1';
+import {COLORS,COVERS,TABLE_Y,WORLD_WIDTH,DROP_DURATION,createGame,update,frameFor,targetProp,moveTo,hideAt,skipTutorial,gazeFor} from './model.js?v=room-6';
+import {PLAY_ZOOM,cameraFor,projectX,unprojectX,targetBounds,propPose,hudCopy,sceneFor} from './view.js?v=room-6';
+import {FISH_HOME,FISH_GOAL,FISH_CAPACITY,FISH_CHANCES,haulValue,createFishGame,beginReach,aimPaw,retractPaw,updateFish,fishHudCopy,fishHidden} from './fish-model.js?v=room-6';
+import {drawFishScene,projectFishY,unprojectFishY} from './fish-view.js?v=room-6';
+import {FISH_PROP_ART} from './fish-props.js?v=room-6';
+import {homeLayout,drawHomeScene} from './home-view.js?v=room-6';
+import {JUMP,createJumpGame,beginJump,releaseJump,cancelJump,updateJump} from './jump-model.js?v=room-6';
+import {drawJumpScene,JUMP_BASE} from './jump-view.js?v=room-6';
+import {RACE,createRace,raceAction,updateRace} from './race-model.js?v=room-6';
+import {drawRaceScene,raceScreenPoint} from './race-view.js?v=room-6';
+import {chainState,resultSummary} from './ui-model.js?v=room-6';
+import {makeBurst,tickParticles,drawParticles} from './feedback.js?v=room-6';
+import {BRAWL,createBrawl,brawlAction,updateBrawl} from './brawl-model.js?v=room-6';
+import {drawBrawlScene} from './brawl-view.js?v=room-6';
+import {setBrawlViewport,brawlScreenPoint} from './brawl-camera.js?v=room-6';
+import {GameAudio} from './audio.js?v=room-6';
+import {loadAssets} from './asset-loader.js?v=room-6';
+import {MAPS,DIFFICULTIES,difficultyKey,mapFor} from './match-options.js?v=room-6';
+import {drawCatSprite} from './cat-sprite.js?v=room-6';
 const $=id=>document.getElementById(id),canvas=$('scene'),ctx=canvas.getContext('2d'),root=$('game');
 const saved=(()=>{try{return JSON.parse(localStorage.getItem('cat-games-v1')||'{}')}catch{return {}}})();
 let color=COLORS.includes(saved.color)?saved.color:'gray',muted=!!saved.muted,best=Number(saved.best)||0,taught=!!saved.taught;
@@ -22,8 +26,10 @@ let jumpBest=Number(saved.jumpBest)||0,jumpTaught=!!saved.jumpTaught,jumpPointer
 let raceBest=Number(saved.raceBest)||0,raceTaught=!!saved.raceTaught,racePointer=null;
 let brawlBest=Number(saved.brawlBest)||0,brawlTaught=!!saved.brawlTaught,brawlTapUntil=0,brawlTapDirection=0;
 const brawlHeld=new Map();
+const matchSettings={race:{difficulty:difficultyKey(saved.matchSettings?.race?.difficulty),map:mapFor('race',saved.matchSettings?.race?.map).id},brawl:{difficulty:difficultyKey(saved.matchSettings?.brawl?.difficulty),map:mapFor('brawl',saved.matchSettings?.brawl?.map).id}};
+const matchRecords=saved.matchRecords||{};
 let screen='loading',game=null,preview='idle',previewTime=0,clock=0,last=0,width=600,height=900,ratio=1,dragging=false,camera=250,walkHeld=0;
-const images={},effects=[],buttons=new Map(),audio=new GameAudio({muted});audio.preload();
+const images={},effects=[],buttons=new Map(),audio=new GameAudio({muted,onStatus:syncSound});audio.preload();
 const fxCanvas=$('feedback'),fxCtx=fxCanvas.getContext('2d'),particles=[],motion=matchMedia('(prefers-reduced-motion: reduce)'),uiAnimations=new WeakMap();
 let lastRank=6,wasAir=false;
 function pulse(el,kind='good'){
@@ -36,7 +42,7 @@ function gameFeedback(e){
   if(!game)return;
   let p;
   if(mode==='race'){const r=game.racers[0];p=raceScreenPoint(game,r.x,r.lane,ratio);p.y+=r.y*.65*ratio;}
-  else if(mode==='brawl')p={x:(e.x??game.cats[0].x)-game.camera,y:BRAWL_BASE+((e.y??game.cats[0].y)-(game.cameraY||0))*ratio};
+  else if(mode==='brawl')p=brawlScreenPoint(game,e.x??game.cats[0].x,e.y??game.cats[0].y);
   else if(mode==='jump')p={x:game.cat.x-game.camera,y:JUMP_BASE+game.cat.y*ratio};
   else if(mode==='fish')p={x:e.x??game.paw.x,y:projectFishY(e.y??game.paw.y,ratio)};
   else p={x:projectX(e.x??game.cat.x,camera),y:TABLE_Y+((e.y??game.cat.y)-TABLE_Y)*PLAY_ZOOM};
@@ -65,47 +71,65 @@ function showResult(summary){
   }
   $('result').hidden=false;
 }
-function save(){try{localStorage.setItem('cat-games-v1',JSON.stringify({...saved,color,muted,best,taught,mode,fishBest,fishTaught,jumpBest,jumpTaught,raceBest,raceTaught,brawlBest,brawlTaught}))}catch{}}
+function save(){try{localStorage.setItem('cat-games-v1',JSON.stringify({...saved,color,muted,best,taught,mode,fishBest,fishTaught,jumpBest,jumpTaught,raceBest,raceTaught,brawlBest,brawlTaught,matchSettings,matchRecords}))}catch{}}
 const files=[...new Set(['brawl-shelf.png','brawl-kitchen.webp','item-food.png','item-shield.png','item-pepper.png','item-speed.png','title-catgames.png','room-side.webp','menu-nook.webp','race-track-vertical.webp','race-cats-back.png','race-hurdle.png','race-gate.png','jump-yard.webp','jump-grass.png','jump-spikes.png','table-side.png','kitchen-side.webp','fish-snack.png',...Object.values(FISH_PROP_ART).map(p=>p.file),...COLORS.flatMap(c=>[`cat-${c}.png`,`cat-fish-${c}.png`,`paw-round-${c}.png`]),...['mug','bottle','books','duck','cushion','popcorn'].map(p=>`${p}-side.png`),'owner-0.png','owner-1.png','owner-2.png'])];
 async function load(){
-  $('retry-load').hidden=true;
-  let count=0;
-  try{await Promise.all(files.map(file=>new Promise((resolve,reject)=>{
-    const img=new Image();img.onload=()=>{images[file.split('.')[0].replace(/-side$/,'')]=img;count++;$('load-label').textContent=`加载 ${Math.round(count/files.length*100)}%`;resolve();};img.onerror=()=>reject(new Error(file));img.src=`assets/${file}${file==='race-cats-back.png'?'?v=clean-edges-1':''}`;
-  })));show('home');}catch{ $('load-label').textContent='加载失败';$('retry-load').hidden=false; }
+  $('retry-load').hidden=true;$('loading').dataset.error='false';$('load-label').textContent='正在开门…';
+  const result=await loadAssets(files,{cache:assetCache,onAsset(file,img){
+    images[file.split('.')[0].replace(/-side$/,'')]=img;
+    if(file===`cat-${color}.png`){const f=document.querySelector('.loading-cat-frame');f.style.backgroundImage=`url("${img.src}")`;f.classList.add('ready');}
+  },onProgress(n,total){const percent=Math.round(n/total*100);$('load-value').textContent=percent+'%';$('load-fill').style.width=percent+'%';$('load-progress').setAttribute('aria-valuenow',percent);}});
+  if(result.failed.length){$('load-label').textContent='没加载完，点一下重试';$('loading').dataset.error='true';$('retry-load').hidden=false;}
+  else show('home');
 }
+const assetCache=new Map();
+files.unshift(`cat-${color}.png`);
+files.push('race-harbor.png','brawl-living.png',...['magnet','feather','glove','ice'].map(k=>`item-${k}.png`),...COLORS.map(c=>`side-stride-${c}.png`));
+$('loading-cat').onclick=()=>{const b=$('loading-cat');b.classList.remove('petting');void b.offsetWidth;b.classList.add('petting');sound('tap');};
+$('loading-cat').addEventListener('animationend',()=>$('loading-cat').classList.remove('petting'));
 $('retry-load').onclick=load;
-function syncHome(){document.querySelectorAll('[data-game]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.game===mode));const records={table:best,fish:fishBest,jump:jumpBest};document.querySelectorAll('[data-record]').forEach(el=>{const m=el.dataset.record,n=m==='brawl'?brawlBest:raceBest;el.textContent=['race','brawl'].includes(m)?(n?`最佳第 ${n} 名`:m==='brawl'?'6 猫混战 · 人机':'6 猫同跑 · 人机'):`纪录 ${records[m]}`;});$('start').innerHTML=`${{fish:'去偷吃',table:'开始捣蛋',jump:'出去跳一跳',race:'去跑酷',brawl:'去厨房开打'}[mode]} <span aria-hidden="true">▶</span>`;document.querySelectorAll('.shelf-dots i').forEach((el,i)=>el.classList.toggle('current',i===MODES.indexOf(mode)));document.querySelector(`[data-game="${mode}"]`)?.scrollIntoView({block:'nearest',inline:'nearest',behavior:motion.matches?'instant':'smooth'});}
+function syncHome(){document.querySelectorAll('[data-game]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.game===mode));const records={table:best,fish:fishBest,jump:jumpBest};document.querySelectorAll('[data-record]').forEach(el=>{const m=el.dataset.record,n=m==='brawl'?brawlBest:raceBest;el.textContent=['race','brawl'].includes(m)?(n?`最佳第 ${n} 名`:m==='brawl'?'6 猫混战 · 人机':'3 猫同跑 · 人机'):`纪录 ${records[m]}`;});$('start').innerHTML=`${{fish:'去偷吃',table:'开始捣蛋',jump:'出去跳一跳',race:'去跑酷',brawl:'去开打'}[mode]} <span aria-hidden="true">▶</span>`;document.querySelectorAll('.shelf-dots i').forEach((el,i)=>el.classList.toggle('current',i===MODES.indexOf(mode)));document.querySelector(`[data-game="${mode}"]`)?.scrollIntoView({block:'nearest',inline:'nearest',behavior:motion.matches?'instant':'smooth'});}
 function clearJumpInput(){if(game&&mode==='jump')cancelJump(game);jumpPointer=null;jumpKey=false;racePointer=null;brawlHeld.clear();brawlTapUntil=0;}
 function show(next){clearJumpInput();screen=next;audio.setScene(next);dragging=false;walkHeld=0;keys.clear();particles.length=0;for(const id of ['loading','home','picker','play'])$(id).hidden=id!==next;$('paused').hidden=true;$('result').hidden=true;if(next==='home'){syncHome();game=null;$('scene').setAttribute('aria-label','客厅里的猫猫');}if(next==='picker')previewTime=0;}
 document.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>{mode=b.dataset.game;syncHome();save();sound('tap');});
 $('shelf-next').onclick=()=>{mode=MODES[(MODES.indexOf(mode)+1)%MODES.length];syncHome();save();sound('tap');};
-function resize(){const rect=root.getBoundingClientRect();width=rect.width;height=rect.height;const dpr=Math.min(2,devicePixelRatio||1);for(const [c,context] of [[canvas,ctx],[fxCanvas,fxCtx]]){c.width=Math.round(width*dpr);c.height=Math.round(height*dpr);context.setTransform(dpr*width/600,0,0,dpr*height/900,0,0);}ratio=(width/600)/(height/900);const hit=homeLayout(ratio).hit;Object.assign($('home-cat').style,{left:`${hit.x/6}%`,top:`${hit.y/9}%`,width:`${hit.w/6}%`,height:`${hit.h/9}%`});}
+function resize(){const rect=root.getBoundingClientRect();width=rect.width;height=rect.height;const dpr=Math.min(2,devicePixelRatio||1);for(const [c,context] of [[canvas,ctx],[fxCanvas,fxCtx]]){c.width=Math.round(width*dpr);c.height=Math.round(height*dpr);context.setTransform(dpr*width/600,0,0,dpr*height/900,0,0);}ratio=(width/600)/(height/900);if(mode==='brawl'&&game)setBrawlViewport(game,ratio);const hit=homeLayout(ratio).hit;Object.assign($('home-cat').style,{left:`${hit.x/6}%`,top:`${hit.y/9}%`,width:`${hit.w/6}%`,height:`${hit.h/9}%`});}
 new ResizeObserver(resize).observe(root);
 function unlock(){audio.unlock();}
 function sound(type,kind='mug'){audio.play(type,kind);}
 document.addEventListener('pointerdown',unlock,{passive:true});document.addEventListener('keydown',unlock);
-function syncSound(){document.querySelectorAll('.sound').forEach(el=>{el.setAttribute('aria-label',muted?'打开声音':'关闭声音');el.textContent=el.id==='sound-home'?(muted?'♪':'♫'):(muted?'打开声音':'关闭声音');});}
-document.querySelectorAll('.sound').forEach(el=>el.onclick=()=>{muted=!muted;audio.setMuted(muted);syncSound();save();});syncSound();
+function syncSound(){document.querySelectorAll('.sound').forEach(el=>{const blocked=audio.needsGesture,label=blocked?'开启音乐':muted?'打开声音':'关闭声音';el.dataset.blocked=String(blocked);el.setAttribute('aria-label',label);el.textContent=el.id==='sound-home'?(muted||blocked?'♪':'♫'):label;});}
+document.querySelectorAll('.sound').forEach(el=>el.onclick=()=>{if(el.dataset.blocked==='true'){muted=false;audio.setMuted(false);audio.unlock();}else{muted=!muted;audio.setMuted(muted);}syncSound();save();});syncSound();
 function syncPicker(){document.querySelectorAll('[data-color]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.color===color));document.querySelectorAll('[data-motion]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.motion===preview));}
 $('wardrobe').onclick=()=>{show('picker');syncPicker();};$('close-picker').onclick=$('select-cat').onclick=()=>{save();show('home');sound('tap');};
 $('home-cat').onclick=()=>$('wardrobe').click();
 document.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{color=b.dataset.color;save();syncPicker();sound('tap');});
 document.querySelectorAll('[data-motion]').forEach(b=>b.onclick=()=>{preview=b.dataset.motion;previewTime=0;syncPicker();sound('tap');});
 function start(forceTutorial=false){
-  show('play');game=mode==='brawl'?createBrawl({color,tutorial:forceTutorial||!brawlTaught}):mode==='race'?createRace({color,tutorial:forceTutorial||!raceTaught}):mode==='jump'?createJumpGame({tutorial:forceTutorial||!jumpTaught,color}):mode==='fish'?createFishGame({tutorial:forceTutorial||!fishTaught}):createGame({tutorial:forceTutorial||!taught});
+  $('match-setup').hidden=true;show('play');game=mode==='brawl'?createBrawl({color,tutorial:forceTutorial||!brawlTaught,...matchSettings.brawl,ratio}):mode==='race'?createRace({color,tutorial:forceTutorial||!raceTaught,...matchSettings.race}):mode==='jump'?createJumpGame({tutorial:forceTutorial||!jumpTaught,color}):mode==='fish'?createFishGame({tutorial:forceTutorial||!fishTaught}):createGame({tutorial:forceTutorial||!taught});
+  if(mode==='brawl')document.querySelector('.brawl-meta span').textContent=mapFor(mode,game.map).name+' · '+DIFFICULTIES[game.difficulty].label;
+  if(mode==='race')document.querySelector('.race-meta span').textContent='3 猫竞速 · '+DIFFICULTIES[game.difficulty].label;
   $('play').classList.toggle('brawl-mode',mode==='brawl');$('brawl-hud').hidden=mode!=='brawl';$('brawl-controls').hidden=mode!=='brawl';$('race-items').hidden=mode!=='race';
   $('play').classList.toggle('fish-mode',mode==='fish');$('play').setAttribute('aria-label',mode==='fish'?'偷吃鱼干':'桌子捣蛋');$('scene').setAttribute('aria-label',mode==='fish'?'猫猫偷吃鱼干，拖动猫爪绕开碗碟':'猫猫和桌子');
   $('play').classList.toggle('jump-mode',mode==='jump');$('jump-press').hidden=mode!=='jump';$('jump-streak').hidden=mode!=='jump';
   if(mode==='jump'){$('play').setAttribute('aria-label','小猫跳一跳');$('scene').setAttribute('aria-label','房子外的小猫跳一跳，按住蓄力松开起跳，避开尖刺');}
   $('play').classList.toggle('race-mode',mode==='race');$('race-hud').hidden=mode!=='race';$('race-controls').hidden=mode!=='race';
   if(mode==='race'){$('play').setAttribute('aria-label','猫猫跑酷赛，人机竞速');$('scene').setAttribute('aria-label','向前跑的三跑道竞速，左右滑动换道，上滑跳跃，下滑钻行');}
-  if(mode==='brawl'){$('play').setAttribute('aria-label','猫咪大乱斗，人机混战');$('scene').setAttribute('aria-label','横版厨房大乱斗，左右移动，空格跳跃，J键冲撞，S键跳下台面');}
+  if(mode==='brawl'){$('play').setAttribute('aria-label','猫咪大乱斗，人机混战');$('scene').setAttribute('aria-label',mapFor(mode,game.map).name+'，左右移动，空格跳跃，J键冲撞，S键跳下台面');}
   document.querySelector('.score small').textContent=mode==='brawl'?'剩余猫咪':mode==='race'?'当前名次':mode==='jump'?'跳跃分':mode==='fish'?'偷吃分':'捣蛋分';$('fish-paw').hidden=mode!=='fish';$('retract').hidden=mode!=='fish';
   $('fish-haul').hidden=mode!=='fish';$('fish-chances').hidden=mode!=='fish';
   if(mode==='table')camera=cameraFor(game.cat.x);walkHeld=0;effects.length=0;lastRank=mode==='race'?game.rank:6;wasAir=false;buildTargets();updateHud();
 }
-$('start').onclick=()=>start();$('learn').onclick=()=>start(true);$('replay').onclick=()=>start();
+function openMatch(){
+  if(!MAPS[mode])return start();
+  const settings=matchSettings[mode];$('match-title').textContent=mode==='race'?'跑一场':'来场大乱斗';
+  $('match-maps').replaceChildren(...MAPS[mode].map(m=>{const b=document.createElement('button');b.className='map-choice';b.setAttribute('aria-pressed',m.id===settings.map);b.innerHTML=`<img src="assets/${m.file}" alt=""><strong>${m.name}</strong>`;b.onclick=()=>{settings.map=m.id;save();openMatch();sound('tap');};return b;}));
+  document.querySelectorAll('[data-difficulty]').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.difficulty===settings.difficulty);b.onclick=()=>{settings.difficulty=b.dataset.difficulty;save();openMatch();sound('tap');};});
+  const record=matchRecords[`${mode}:${settings.map}:${settings.difficulty}`];$('match-record').textContent=record?`本场地最佳 第 ${record} 名`:mode==='race'?'900 米 · 3 猫同线出发':'6 猫混战 · 上下台面';
+  $('match-setup').hidden=false;
+}
+$('match-close').onclick=()=>$('match-setup').hidden=true;$('match-start').onclick=()=>start();
+$('start').onclick=openMatch;$('learn').onclick=()=>start(true);$('replay').onclick=()=>start();
 $('result-home').onclick=$('pause-home').onclick=()=>show('home');
 $('pause').onclick=()=>pause();$('resume').onclick=()=>{game.paused=false;audio.setPaused(false);$('paused').hidden=true;};
 function pause(){walkHeld=0;dragging=false;keys.clear();clearJumpInput();if(game?.status==='play'){if(mode==='fish')retractPaw(game);game.paused=true;audio.setPaused(true);$('paused').hidden=false;}}
@@ -200,7 +224,7 @@ function updateHud(){
     if(s.time>8&&!brawlTaught){brawlTaught=true;save();}return;
   }
   if(mode==='race'){
-    const r=s.racers[0];$('score').textContent=`${s.rank}/6`;$('attention').hidden=true;
+    const r=s.racers[0];$('score').textContent=`${s.rank}/3`;$('attention').hidden=true;
     if(s.rank<lastRank&&s.phase==='run')pulse(document.querySelector('.score'));lastRank=s.rank;
     $('race-distance').textContent=`${Math.max(0,Math.round((RACE.finish-r.x)/20))} 米`;
     $('race-clean').textContent=r.boost>0?'冲刺中':`${r.clean%3} / 3`;$('race-clean').classList.toggle('boosting',r.boost>0);
@@ -241,7 +265,7 @@ function updateHud(){
   $('hide').textContent=s.cat.hidden?'已藏好':'躲起来';$('route-dot').style.left=`${s.cat.x/WORLD_WIDTH*100}%`;updateTargets();
 }
 function sprite(img,x,y,w,rotation=0,alpha=1){if(!img)return;const h=w*img.height/img.width;ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,y);ctx.scale(1,ratio);ctx.rotate(rotation);ctx.drawImage(img,-w/2,-h,w,h);ctx.restore();}
-function catSprite(x,y,w,frame,facing=1){const img=images[`cat-${color}`];if(!img)return;const scale=w/360;ctx.save();ctx.translate(x,y);ctx.scale(facing,1);ctx.drawImage(img,frame%4*360,Math.floor(frame/4)*310,360,310,-215*scale,-290*scale*ratio,w,310*scale*ratio);ctx.restore();}
+function catSprite(x,y,w,frame,facing=1){drawCatSprite(ctx,images,color,x,y,w,frame,facing,ratio);}
 function shadow(x,y,w){ctx.fillStyle='#75532926';ctx.beginPath();ctx.ellipse(x,y,w,w*.22*ratio,0,0,Math.PI*2);ctx.fill();}
 function table(x,y,w){const img=images.table;if(img)ctx.drawImage(img,x,y,w,w*img.height/img.width*ratio);}
 function drawScene(dt){
@@ -296,7 +320,9 @@ function handleEvents(){for(const e of game.events.splice(0)){
   if(e.type==='clink')effects.push({text:'!',x:e.x,y:e.y-15,vx:0,vy:-30,age:0,life:.45});
   if(e.type==='learned'){if(mode==='race')raceTaught=true;else if(mode==='jump')jumpTaught=true;else if(mode==='fish')fishTaught=true;else taught=true;save();}
   if(e.type==='end'){
-    const summary=resultSummary(mode,game,{brawl:brawlBest,race:raceBest,jump:jumpBest,fish:fishBest,table:best}[mode],e.result);
+    const recordKey=`${mode}:${game.map}:${game.difficulty}`;
+    const summary=resultSummary(mode,game,MAPS[mode]?(matchRecords[recordKey]||0):{jump:jumpBest,fish:fishBest,table:best}[mode],e.result);
+    if(MAPS[mode])matchRecords[recordKey]=matchRecords[recordKey]?Math.min(matchRecords[recordKey],game.rank):game.rank;
     if(mode==='brawl')brawlBest=brawlBest?Math.min(brawlBest,game.rank):game.rank;
     else if(mode==='race')raceBest=raceBest?Math.min(raceBest,game.rank):game.rank;
     else if(mode==='jump')jumpBest=Math.max(jumpBest,game.score);
@@ -311,7 +337,7 @@ function loop(now){
     if(mode==='brawl'){
       const values=[...brawlHeld.values()],dx=(keys.has('d')||keys.has('arrowright')||values.includes(1)?1:0)-(keys.has('a')||keys.has('arrowleft')||values.includes(-1)?1:0);
       updateBrawl(game,dt,dx||(clock<brawlTapUntil?brawlTapDirection:0));
-    }else if(mode==='race'){updateRace(game,dt);const air=game.racers[0].y<0;if(wasAir&&!air&&game.phase==='run')gameFeedback({type:'land'});wasAir=air;}else if(mode==='jump'){updateJump(game,dt);}else if(mode==='fish'){
+    }else if(mode==='race'){updateRace(game,dt);}else if(mode==='jump'){updateJump(game,dt);}else if(mode==='fish'){
       const dx=(keys.has('d')||keys.has('ArrowRight')?1:0)-(keys.has('a')||keys.has('ArrowLeft')?1:0),dy=(keys.has('s')||keys.has('ArrowDown')?1:0)-(keys.has('w')||keys.has('ArrowUp')?1:0);
       if(dx||dy)aimPaw(game,game.paw.x+dx*650*dt,game.paw.y+dy*650*dt);updateFish(game,dt);
     }else{if(!game.tutorial){const dx=walkHeld||(keys.has('d')||keys.has('ArrowRight')?1:0)-(keys.has('a')||keys.has('ArrowLeft')?1:0);if(dx)moveTo(game,game.cat.x+dx*35,TABLE_Y);}update(game,dt);camera+=(cameraFor(game.cat.x)-camera)*(1-Math.exp(-9*dt));}
@@ -320,4 +346,4 @@ function loop(now){
   if(!game?.paused)tickParticles(particles,dt);
   drawScene(dt);fxCtx.clearRect(0,0,600,900);if(screen==='play')drawParticles(fxCtx,particles,ratio);requestAnimationFrame(loop);
 }
-resize();load();requestAnimationFrame(loop);
+resize();audio.unlock();load();requestAnimationFrame(loop);

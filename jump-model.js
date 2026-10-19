@@ -1,6 +1,6 @@
-import {jumpFrame} from './jump-art.js';
-import {touchesSpike,catLeft,SPIKE_ART_HEIGHT} from './jump-collision.js';
-export {touchesSpike} from './jump-collision.js';
+import {jumpFrame} from './jump-art.js?v=room-6';
+import {touchesSpike,catLeft,SPIKE_ART_HEIGHT} from './jump-collision.js?v=room-6';
+export {touchesSpike} from './jump-collision.js?v=room-6';
 // One continuous lawn. There is no walking, steering, automatic jumping or pitfall.
 export const JUMP={gravity:1100,launchY:560,minSpeed:80,maxSpeed:440,chargeTime:1.1,spikeWidth:72,spikeHeight:SPIKE_ART_HEIGHT};
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
