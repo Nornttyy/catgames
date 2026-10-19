@@ -1,6 +1,6 @@
-import {emitWorldFX} from './brawl-fx.js?v=room-6';
-import {DIFFICULTIES,difficultyKey,mapFor} from './match-options.js?v=room-6';
-import {setBrawlViewport,updateBrawlCamera} from './brawl-camera.js?v=room-6';
+import {emitWorldFX} from './brawl-fx.js?v=controls-7';
+import {DIFFICULTIES,difficultyKey,mapFor} from './match-options.js?v=controls-7';
+import {setBrawlViewport,updateBrawlCamera} from './brawl-camera.js?v=controls-7';
 export const BRAWL={width:1800,edge:75,duration:85,hp:100,speed:235,jump:1060,gravity:1850,damage:20,dashSpeed:650,windup:.12,active:.23,recovery:.18,cooldown:1.25};
 // Collision tops use the same world coordinates as the kitchen artwork/shelf sprites.
 export const COUNTERS=[

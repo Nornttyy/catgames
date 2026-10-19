@@ -1,10 +1,10 @@
-import {BRAWL,attackPhase} from './brawl-model.js?v=room-6';
-import {drawItem} from './item-view.js?v=room-6';
-import {drawWorldFX,drawDashRibbon} from './brawl-fx.js?v=room-6';
-import {frameFor} from './model.js?v=room-6';
-import {mapFor} from './match-options.js?v=room-6';
-import {drawCatSprite} from './cat-sprite.js?v=room-6';
-import {BRAWL_ROOM,BRAWL_BASE,brawlScreenPoint} from './brawl-camera.js?v=room-6';
+import {BRAWL,attackPhase} from './brawl-model.js?v=controls-7';
+import {drawItem} from './item-view.js?v=controls-7';
+import {drawWorldFX,drawDashRibbon} from './brawl-fx.js?v=controls-7';
+import {frameFor} from './model.js?v=controls-7';
+import {mapFor} from './match-options.js?v=controls-7';
+import {drawCatSprite} from './cat-sprite.js?v=controls-7';
+import {BRAWL_ROOM,BRAWL_BASE,brawlScreenPoint} from './brawl-camera.js?v=controls-7';
 export {BRAWL_BASE};
 const ink='#40392e';
 function label(ctx,t,x,y,size,color='#fff8d7'){

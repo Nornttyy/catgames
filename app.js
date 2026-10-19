@@ -1,22 +1,23 @@
-import {COLORS,COVERS,TABLE_Y,WORLD_WIDTH,DROP_DURATION,createGame,update,frameFor,targetProp,moveTo,hideAt,skipTutorial,gazeFor} from './model.js?v=room-6';
-import {PLAY_ZOOM,cameraFor,projectX,unprojectX,targetBounds,propPose,hudCopy,sceneFor} from './view.js?v=room-6';
-import {FISH_HOME,FISH_GOAL,FISH_CAPACITY,FISH_CHANCES,haulValue,createFishGame,beginReach,aimPaw,retractPaw,updateFish,fishHudCopy,fishHidden} from './fish-model.js?v=room-6';
-import {drawFishScene,projectFishY,unprojectFishY} from './fish-view.js?v=room-6';
-import {FISH_PROP_ART} from './fish-props.js?v=room-6';
-import {homeLayout,drawHomeScene} from './home-view.js?v=room-6';
-import {JUMP,createJumpGame,beginJump,releaseJump,cancelJump,updateJump} from './jump-model.js?v=room-6';
-import {drawJumpScene,JUMP_BASE} from './jump-view.js?v=room-6';
-import {RACE,createRace,raceAction,updateRace} from './race-model.js?v=room-6';
-import {drawRaceScene,raceScreenPoint} from './race-view.js?v=room-6';
-import {chainState,resultSummary} from './ui-model.js?v=room-6';
-import {makeBurst,tickParticles,drawParticles} from './feedback.js?v=room-6';
-import {BRAWL,createBrawl,brawlAction,updateBrawl} from './brawl-model.js?v=room-6';
-import {drawBrawlScene} from './brawl-view.js?v=room-6';
-import {setBrawlViewport,brawlScreenPoint} from './brawl-camera.js?v=room-6';
-import {GameAudio} from './audio.js?v=room-6';
-import {loadAssets} from './asset-loader.js?v=room-6';
-import {MAPS,DIFFICULTIES,difficultyKey,mapFor} from './match-options.js?v=room-6';
-import {drawCatSprite} from './cat-sprite.js?v=room-6';
+import {COLORS,COVERS,TABLE_Y,WORLD_WIDTH,DROP_DURATION,createGame,update,frameFor,targetProp,moveTo,hideAt,skipTutorial,gazeFor} from './model.js?v=controls-7';
+import {PLAY_ZOOM,cameraFor,projectX,unprojectX,targetBounds,propPose,hudCopy,sceneFor} from './view.js?v=controls-7';
+import {FISH_HOME,FISH_GOAL,FISH_CAPACITY,FISH_CHANCES,haulValue,createFishGame,beginReach,aimPaw,retractPaw,updateFish,fishHudCopy,fishHidden} from './fish-model.js?v=controls-7';
+import {drawFishScene,projectFishY,unprojectFishY} from './fish-view.js?v=controls-7';
+import {FISH_PROP_ART} from './fish-props.js?v=controls-7';
+import {homeLayout,drawHomeScene} from './home-view.js?v=controls-7';
+import {JUMP,createJumpGame,beginJump,releaseJump,cancelJump,updateJump} from './jump-model.js?v=controls-7';
+import {drawJumpScene,JUMP_BASE} from './jump-view.js?v=controls-7';
+import {RACE,createRace,raceAction,updateRace} from './race-model.js?v=controls-7';
+import {drawRaceScene,raceScreenPoint} from './race-view.js?v=controls-7';
+import {chainState,resultSummary} from './ui-model.js?v=controls-7';
+import {makeBurst,tickParticles,drawParticles} from './feedback.js?v=controls-7';
+import {BRAWL,createBrawl,brawlAction,updateBrawl} from './brawl-model.js?v=controls-7';
+import {drawBrawlScene} from './brawl-view.js?v=controls-7';
+import {setBrawlViewport,brawlScreenPoint} from './brawl-camera.js?v=controls-7';
+import {GameAudio} from './audio.js?v=controls-7';
+import {loadAssets} from './asset-loader.js?v=controls-7';
+import {MAPS,DIFFICULTIES,difficultyKey,mapFor} from './match-options.js?v=controls-7';
+import {drawCatSprite} from './cat-sprite.js?v=controls-7';
+import {ActionBuffer,DirectionPad,bindDirectionPad} from './touch-controls.js?v=controls-7';
 const $=id=>document.getElementById(id),canvas=$('scene'),ctx=canvas.getContext('2d'),root=$('game');
 const saved=(()=>{try{return JSON.parse(localStorage.getItem('cat-games-v1')||'{}')}catch{return {}}})();
 let color=COLORS.includes(saved.color)?saved.color:'gray',muted=!!saved.muted,best=Number(saved.best)||0,taught=!!saved.taught;
@@ -25,7 +26,7 @@ let mode=MODES.includes(saved.mode)?saved.mode:'brawl',fishBest=Number(saved.fis
 let jumpBest=Number(saved.jumpBest)||0,jumpTaught=!!saved.jumpTaught,jumpPointer=null,jumpKey=false;
 let raceBest=Number(saved.raceBest)||0,raceTaught=!!saved.raceTaught,racePointer=null;
 let brawlBest=Number(saved.brawlBest)||0,brawlTaught=!!saved.brawlTaught,brawlTapUntil=0,brawlTapDirection=0;
-const brawlHeld=new Map();
+const brawlPad=new DirectionPad(),actionBuffer=new ActionBuffer(.16);
 const matchSettings={race:{difficulty:difficultyKey(saved.matchSettings?.race?.difficulty),map:mapFor('race',saved.matchSettings?.race?.map).id},brawl:{difficulty:difficultyKey(saved.matchSettings?.brawl?.difficulty),map:mapFor('brawl',saved.matchSettings?.brawl?.map).id}};
 const matchRecords=saved.matchRecords||{};
 let screen='loading',game=null,preview='idle',previewTime=0,clock=0,last=0,width=600,height=900,ratio=1,dragging=false,camera=250,walkHeld=0;
@@ -89,7 +90,7 @@ $('loading-cat').onclick=()=>{const b=$('loading-cat');b.classList.remove('petti
 $('loading-cat').addEventListener('animationend',()=>$('loading-cat').classList.remove('petting'));
 $('retry-load').onclick=load;
 function syncHome(){document.querySelectorAll('[data-game]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.game===mode));const records={table:best,fish:fishBest,jump:jumpBest};document.querySelectorAll('[data-record]').forEach(el=>{const m=el.dataset.record,n=m==='brawl'?brawlBest:raceBest;el.textContent=['race','brawl'].includes(m)?(n?`最佳第 ${n} 名`:m==='brawl'?'6 猫混战 · 人机':'3 猫同跑 · 人机'):`纪录 ${records[m]}`;});$('start').innerHTML=`${{fish:'去偷吃',table:'开始捣蛋',jump:'出去跳一跳',race:'去跑酷',brawl:'去开打'}[mode]} <span aria-hidden="true">▶</span>`;document.querySelectorAll('.shelf-dots i').forEach((el,i)=>el.classList.toggle('current',i===MODES.indexOf(mode)));document.querySelector(`[data-game="${mode}"]`)?.scrollIntoView({block:'nearest',inline:'nearest',behavior:motion.matches?'instant':'smooth'});}
-function clearJumpInput(){if(game&&mode==='jump')cancelJump(game);jumpPointer=null;jumpKey=false;racePointer=null;brawlHeld.clear();brawlTapUntil=0;}
+function clearJumpInput(){if(game&&mode==='jump')cancelJump(game);jumpPointer=null;jumpKey=false;racePointer=null;brawlPad.clear();actionBuffer.clear();brawlTapUntil=0;document.querySelectorAll('.pressed').forEach(b=>b.classList.remove('pressed'));}
 function show(next){clearJumpInput();screen=next;audio.setScene(next);dragging=false;walkHeld=0;keys.clear();particles.length=0;for(const id of ['loading','home','picker','play'])$(id).hidden=id!==next;$('paused').hidden=true;$('result').hidden=true;if(next==='home'){syncHome();game=null;$('scene').setAttribute('aria-label','客厅里的猫猫');}if(next==='picker')previewTime=0;}
 document.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>{mode=b.dataset.game;syncHome();save();sound('tap');});
 $('shelf-next').onclick=()=>{mode=MODES[(MODES.indexOf(mode)+1)%MODES.length];syncHome();save();sound('tap');};
@@ -131,7 +132,9 @@ function openMatch(){
 $('match-close').onclick=()=>$('match-setup').hidden=true;$('match-start').onclick=()=>start();
 $('start').onclick=openMatch;$('learn').onclick=()=>start(true);$('replay').onclick=()=>start();
 $('result-home').onclick=$('pause-home').onclick=()=>show('home');
-$('pause').onclick=()=>pause();$('resume').onclick=()=>{game.paused=false;audio.setPaused(false);$('paused').hidden=true;};
+$('pause').onclick=()=>pause();$('resume').onclick=()=>resume();
+function resume(){if(!game||game.status!=='play')return;clearJumpInput();keys.clear();game.paused=false;audio.setPaused(false);$('paused').hidden=true;}
+function togglePause(){if(game?.paused)resume();else pause();}
 function pause(){walkHeld=0;dragging=false;keys.clear();clearJumpInput();if(game?.status==='play'){if(mode==='fish')retractPaw(game);game.paused=true;audio.setPaused(true);$('paused').hidden=false;}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();audio.setVisible(!document.hidden);});
 $('skip').onclick=()=>{if(mode==='race'){game.tutorial=false;raceTaught=true;}else if(mode==='jump'){game.tutorial=false;jumpTaught=true;}else if(mode==='fish'){game.tutorial=null;fishTaught=true;}else{skipTutorial(game);taught=true;}save();updateHud();};
@@ -158,32 +161,53 @@ function updateTargets(){
 }
 function point(e){const r=canvas.getBoundingClientRect();const x=(e.clientX-r.left)/r.width*600;return mode==='fish'?{x,y:unprojectFishY((e.clientY-r.top)/r.height*900,ratio)}:{x:unprojectX(x,camera),y:TABLE_Y};}
 function pointerDown(e){if(screen!=='play'||!game||game.paused||mode==='brawl')return;if(mode==='race'){if(racePointer||e.button>0)return;e.preventDefault();racePointer={id:e.pointerId,x:e.clientX,y:e.clientY,acted:false};e.currentTarget.setPointerCapture(e.pointerId);return;}if(mode==='jump'){if(jumpPointer!==null||jumpKey||e.button>0)return;if(beginJump(game)){e.preventDefault();jumpPointer=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);}return;}const p=point(e);if(mode==='fish'){dragging=beginReach(game,p.x,p.y);}else{dragging=true;moveTo(game,p.x,p.y);}if(dragging){e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);}}
-function pointerMove(e){if(mode==='race'){const p=racePointer;if(p?.id===e.pointerId&&!p.acted){const dx=e.clientX-p.x,dy=e.clientY-p.y;if(Math.max(Math.abs(dx),Math.abs(dy))>22){raceAction(game,Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'slide':'jump'));p.acted=true;}}return;}if(mode==='jump')return;if(dragging&&game){const p=point(e);if(mode==='fish')aimPaw(game,p.x,p.y);else moveTo(game,p.x,p.y);}}
-function pointerUp(e){if(mode==='race'){if(racePointer?.id===e.pointerId){if(e.type==='pointerup'&&!racePointer.acted)raceAction(game,'jump');racePointer=null;}return;}if(mode==='jump'){if(e.pointerId===jumpPointer){jumpPointer=null;if(e.type==='pointerup')releaseJump(game);else cancelJump(game);}return;}if(dragging&&mode==='fish'&&game)retractPaw(game);dragging=false;}
+function pointerMove(e){if(mode==='race'){const p=racePointer;if(p?.id===e.pointerId&&!p.acted){const dx=e.clientX-p.x,dy=e.clientY-p.y;if(Math.max(Math.abs(dx),Math.abs(dy))>22){requestAction(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'slide':'jump'));p.acted=true;}}return;}if(mode==='jump')return;if(dragging&&game){const p=point(e);if(mode==='fish')aimPaw(game,p.x,p.y);else moveTo(game,p.x,p.y);}}
+function pointerUp(e){if(mode==='race'){if(racePointer?.id===e.pointerId){if(e.type==='pointerup'&&!racePointer.acted)requestAction('jump');racePointer=null;}return;}if(mode==='jump'){if(e.pointerId===jumpPointer){jumpPointer=null;if(e.type==='pointerup')releaseJump(game);else cancelJump(game);}return;}if(dragging&&mode==='fish'&&game)retractPaw(game);dragging=false;}
 for(const el of [canvas,$('fish-paw'),$('jump-press')]){el.addEventListener('pointerdown',pointerDown);el.addEventListener('pointermove',pointerMove);for(const event of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(event,pointerUp);}
 $('fish-paw').onclick=e=>{if(e.detail===0&&game&&mode==='fish')beginReach(game,game.paw.x,game.paw.y);};
-for(const [id,action] of [['race-jump','jump'],['race-slide','slide'],['race-left','left'],['race-right','right']]){
-  const b=$(id);b.addEventListener('pointerdown',e=>{e.preventDefault();if(game&&mode==='race')raceAction(game,action);});
-  b.onclick=e=>{if(e.detail===0&&game&&mode==='race')raceAction(game,action);};
+function controlsReady(){return screen==='play'&&game?.status==='play'&&!game.paused&&(mode==='brawl'?game.phase==='fight'&&game.cats[0].hp>0:mode==='race'&&game.phase==='run');}
+function flushActions(){
+  if(!controlsReady()){actionBuffer.clear();return;}
+  actionBuffer.flush(clock,action=>{
+    if(mode==='brawl'){
+      const c=game.cats[0];if(action==='jump'&&!c.grounded&&c.coyote<=0)return false;
+      return brawlAction(game,action);
+    }
+    if(action==='jump'&&game.racers[0].y<-.5)return false;
+    return raceAction(game,action);
+  });
 }
+function requestAction(action){
+  if(!controlsReady())return;
+  if(mode==='race'&&['left','right'].includes(action)){raceAction(game,action);return;}
+  // Opposite vertical inputs replace each other instead of firing together on landing.
+  if(['jump','slide','drop'].includes(action))for(const a of ['jump','slide','drop'])actionBuffer.pending.delete(a);
+  actionBuffer.press(action,clock);flushActions();
+}
+for(const [id,action] of [['race-jump','jump'],['race-slide','slide'],['race-left','left'],['race-right','right'],['brawl-jump','jump'],['brawl-attack','attack'],['brawl-drop','drop']]){
+  const b=$(id),owner=id.startsWith('brawl')?'brawl':'race';
+  b.addEventListener('pointerdown',e=>{if(e.button>0||mode!==owner||!controlsReady())return;e.preventDefault();b.setPointerCapture(e.pointerId);b.classList.add('pressed');requestAction(action);});
+  for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,()=>b.classList.remove('pressed'));
+  b.addEventListener('pointercancel',()=>actionBuffer.pending.delete(action));
+  b.onclick=e=>{if(e.detail===0&&mode===owner)requestAction(action);};
+}
+for(const id of ['brawl-controls','race-controls'])$(id).addEventListener('contextmenu',e=>e.preventDefault());
+bindDirectionPad($('brawl-move-pad'),brawlPad,{enabled:()=>mode==='brawl'&&controlsReady(),onChange:dir=>{
+  $('brawl-left').classList.toggle('pressed',dir<0);$('brawl-right').classList.toggle('pressed',dir>0);
+}});
 for(const [id,direction] of [['brawl-left',-1],['brawl-right',1]]){
-  const b=$(id);b.addEventListener('pointerdown',e=>{e.preventDefault();if(mode!=='brawl'||screen!=='play'||game?.paused)return;brawlHeld.set(e.pointerId,direction);b.setPointerCapture(e.pointerId);});
-  for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,e=>brawlHeld.delete(e.pointerId));
-  b.onclick=e=>{if(e.detail===0){brawlTapDirection=direction;brawlTapUntil=clock+.22;}};
-}
-for(const [id,action] of [['brawl-jump','jump'],['brawl-attack','attack'],['brawl-drop','drop']]){
-  const b=$(id);b.addEventListener('pointerdown',e=>{e.preventDefault();if(game&&mode==='brawl')brawlAction(game,action);});
-  b.onclick=e=>{if(e.detail===0&&game&&mode==='brawl')brawlAction(game,action);};
+  $(id).onclick=e=>{if(e.detail===0&&mode==='brawl'&&controlsReady()){brawlTapDirection=direction;brawlTapUntil=clock+.22;}};
 }
 const keys=new Set();document.addEventListener('keydown',e=>{
   if(screen!=='play'||!game)return;
+  if(e.key==='Escape'){e.preventDefault();if(!e.repeat)togglePause();return;}
   if(mode==='brawl'){
-    const key=e.key.toLowerCase();if(['a','d','w','s','j',' ','arrowleft','arrowright','arrowup','arrowdown','escape'].includes(key))e.preventDefault();
-    if(key==='escape')pause();else if(!game.paused){keys.add(key);if(!e.repeat){if([' ','w','arrowup'].includes(key))brawlAction(game,'jump');if(key==='j')brawlAction(game,'attack');if(['s','arrowdown'].includes(key))brawlAction(game,'drop');}}return;
+    const key=e.key.toLowerCase();if(['a','d','w','s','j','k',' ','arrowleft','arrowright','arrowup','arrowdown'].includes(key))e.preventDefault();
+    if(!game.paused){keys.add(key);if(!e.repeat){if([' ','w','k','arrowup'].includes(key))requestAction('jump');if(key==='j')requestAction('attack');if(['s','arrowdown'].includes(key))requestAction('drop');}}return;
   }
   if(mode==='race'){
-    if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','s','a','d','Escape'].includes(e.key))e.preventDefault();
-    if(e.key==='Escape')pause();else if(!e.repeat){if([' ','ArrowUp','w'].includes(e.key))raceAction(game,'jump');if(['ArrowDown','s'].includes(e.key))raceAction(game,'slide');if(['ArrowLeft','a'].includes(e.key))raceAction(game,'left');if(['ArrowRight','d'].includes(e.key))raceAction(game,'right');}return;
+    const key=e.key.toLowerCase();if([' ','arrowup','arrowdown','arrowleft','arrowright','w','s','a','d'].includes(key))e.preventDefault();
+    if(!e.repeat){if([' ','arrowup','w'].includes(key))requestAction('jump');if(['arrowdown','s'].includes(key))requestAction('slide');if(['arrowleft','a'].includes(key))requestAction('left');if(['arrowright','d'].includes(key))requestAction('right');}return;
   }
   if(mode==='jump'){
     if([' ','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','d','Escape'].includes(e.key))e.preventDefault();
@@ -214,11 +238,12 @@ function updateHud(){
     $('score').textContent=`${alive} 只`;$('time').textContent=Math.ceil(s.remaining);$('time').parentElement.classList.toggle('urgent',s.remaining<15);
     $('attention').hidden=true;$('skip').hidden=true;$('brawl-health-text').textContent=`${Math.ceil(c.hp)} / 100`;
     const hp=$('brawl-health');hp.setAttribute('aria-valuenow',Math.ceil(c.hp));hp.querySelector('i').style.width=`${c.hp}%`;hp.classList.toggle('low',c.hp<35);
-    document.querySelectorAll('[data-fighter]').forEach((el,i)=>{el.style.left=`${s.cats[i].x/BRAWL.width*100}%`;el.style.bottom=`${Math.min(1,-s.cats[i].y/750)*23}px`;el.style.opacity=s.cats[i].hp>0?1:.15;});
     document.querySelectorAll('[data-brawl-buff]').forEach(el=>{const t=c[el.dataset.brawlBuff];el.hidden=t<=0;el.querySelector('b').textContent=`${Math.ceil(t)}s`;});
     for(const id of ['brawl-left','brawl-right','brawl-jump','brawl-drop','brawl-attack'])$(id).disabled=s.phase!=='fight'||s.paused||s.status!=='play'||c.hp<=0;
     $('brawl-drop').disabled||=!c.grounded||c.surface===0;
-    $('brawl-attack').disabled||=c.cooldown>0;$('brawl-attack').style.setProperty('--ready',1-Math.min(1,c.cooldown/BRAWL.cooldown));
+    const attack=$('brawl-attack'),cooldown=attack.querySelector('.cooldown-label');
+    attack.classList.toggle('cooling',c.cooldown>0);attack.style.setProperty('--ready',1-Math.min(1,c.cooldown/(c.glove>0?.78:BRAWL.cooldown)));
+    cooldown.hidden=c.cooldown<=0;cooldown.textContent=c.cooldown>0?c.cooldown.toFixed(1):'';
     $('brawl-left').classList.toggle('active',c.dir<0);$('brawl-right').classList.toggle('active',c.dir>0);$('brawl-attack').classList.toggle('active',c.attack>0);
     $('tip').hidden=!s.tutorial||s.time>8;$('tip').textContent='跳上台面 · 再跳登高 · ↓ 跳下';
     if(s.time>8&&!brawlTaught){brawlTaught=true;save();}return;
@@ -335,12 +360,13 @@ function loop(now){
   const dt=Math.min(.04,(now-last)/1000||0);last=now;clock+=dt;previewTime+=dt;
   if(game&&screen==='play'&&!game.paused){
     if(mode==='brawl'){
-      const values=[...brawlHeld.values()],dx=(keys.has('d')||keys.has('arrowright')||values.includes(1)?1:0)-(keys.has('a')||keys.has('arrowleft')||values.includes(-1)?1:0);
+      const dx=(keys.has('d')||keys.has('arrowright')||brawlPad.value>0?1:0)-(keys.has('a')||keys.has('arrowleft')||brawlPad.value<0?1:0);
       updateBrawl(game,dt,dx||(clock<brawlTapUntil?brawlTapDirection:0));
     }else if(mode==='race'){updateRace(game,dt);}else if(mode==='jump'){updateJump(game,dt);}else if(mode==='fish'){
       const dx=(keys.has('d')||keys.has('ArrowRight')?1:0)-(keys.has('a')||keys.has('ArrowLeft')?1:0),dy=(keys.has('s')||keys.has('ArrowDown')?1:0)-(keys.has('w')||keys.has('ArrowUp')?1:0);
       if(dx||dy)aimPaw(game,game.paw.x+dx*650*dt,game.paw.y+dy*650*dt);updateFish(game,dt);
     }else{if(!game.tutorial){const dx=walkHeld||(keys.has('d')||keys.has('ArrowRight')?1:0)-(keys.has('a')||keys.has('ArrowLeft')?1:0);if(dx)moveTo(game,game.cat.x+dx*35,TABLE_Y);}update(game,dt);camera+=(cameraFor(game.cat.x)-camera)*(1-Math.exp(-9*dt));}
+    if(mode==='brawl'||mode==='race')flushActions();
     handleEvents();effects.forEach(e=>e.age+=dt);for(let i=effects.length-1;i>=0;i--)if(effects[i].age>=effects[i].life)effects.splice(i,1);updateHud();
   }
   if(!game?.paused)tickParticles(particles,dt);

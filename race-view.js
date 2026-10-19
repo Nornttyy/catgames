@@ -1,8 +1,8 @@
-import {RACE,raceFrame} from './race-model.js?v=room-6';
-import {drawItem} from './item-view.js?v=room-6';
-import {mapFor} from './match-options.js?v=room-6';
-import {loopTexture} from './track-loop.js?v=room-6';
-import {drawRaceCatSprite} from './race-tail.js?v=room-6';
+import {RACE,raceFrame} from './race-model.js?v=controls-7';
+import {drawItem} from './item-view.js?v=controls-7';
+import {mapFor} from './match-options.js?v=controls-7';
+import {loopTexture} from './track-loop.js?v=controls-7';
+import {drawRaceCatSprite} from './race-tail.js?v=controls-7';
 const ink='#353229',colors=['gray','orange','cream','black'];
 export const RACE_VIEW={anchor:680,forwardScale:.8,catSize:152};
 const laneX=lane=>300+(lane-1)*RACE.laneWidth;

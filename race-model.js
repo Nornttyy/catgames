@@ -1,5 +1,5 @@
 // x is distance along the course; lane is continuous lateral position (0..2).
-import {DIFFICULTIES,difficultyKey,mapFor} from './match-options.js?v=room-6';
+import {DIFFICULTIES,difficultyKey,mapFor} from './match-options.js?v=controls-7';
 export const RACE={finish:18000,speed:340,gravity:1300,jump:700,slide:1.05,boost:1.65,boostSpeed:85,countdown:3,laneWidth:128,laneTime:.18,bodyHalfWidth:29,bodyHalfDepth:18};
 const colors=['gray','orange','cream','black'];
 export function makeCourse(random=Math.random,difficulty='normal'){

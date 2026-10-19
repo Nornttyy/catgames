@@ -1,4 +1,4 @@
-import {TABLE_Y,WORLD_WIDTH,DROP_DURATION,clamp} from './model.js?v=room-6';
+import {TABLE_Y,WORLD_WIDTH,DROP_DURATION,clamp} from './model.js?v=controls-7';
 
 // Selecting a game changes its menu controls, not the shared living room.
 export const sceneFor=(screen,mode)=>screen==='play'&&mode==='fish'?'kitchen':'living-room';

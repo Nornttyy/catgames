@@ -1,4 +1,4 @@
-import {FISH_PROP_ART,fishProp} from './fish-props.js?v=room-6';
+import {FISH_PROP_ART,fishProp} from './fish-props.js?v=controls-7';
 // A short risk/banking round: grab one to three fish, then bring them home.
 export const FISH_HOME={x:114,y:608};
 export const FISH_GOAL=12;

@@ -1,7 +1,7 @@
-import {FISH_HOME} from './fish-model.js?v=room-6';
-import {frameFor} from './model.js?v=room-6';
-import {pawRig,drawForeleg,drawPaw} from './paw-rig.js?v=room-6';
-import {FISH_PROP_ART,FISH_SNACK_WIDTH,fishProp} from './fish-props.js?v=room-6';
+import {FISH_HOME} from './fish-model.js?v=controls-7';
+import {frameFor} from './model.js?v=controls-7';
+import {pawRig,drawForeleg,drawPaw} from './paw-rig.js?v=controls-7';
+import {FISH_PROP_ART,FISH_SNACK_WIDTH,fishProp} from './fish-props.js?v=controls-7';
 export const projectFishY=(y,ratio)=>620+(y-620)*ratio;
 export const unprojectFishY=(y,ratio)=>620+(y-620)/ratio;
 export function fishCatLayers(home=false){

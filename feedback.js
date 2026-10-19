@@ -1,4 +1,4 @@
-import {clamp01} from './ui-model.js?v=room-6';
+import {clamp01} from './ui-model.js?v=controls-7';
 export const MAX_PARTICLES=18;
 export function makeBurst(kind,x,y,{random=Math.random,reduced=false}={}){
   if(reduced)return [];

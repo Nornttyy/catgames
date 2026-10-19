@@ -1,5 +1,5 @@
-import {CAT_ART} from './jump-art.js?v=room-6';
-import {CAT_MASKS,SPIKE_MASK} from './jump-masks.js?v=room-6';
+import {CAT_ART} from './jump-art.js?v=controls-7';
+import {CAT_MASKS,SPIKE_MASK} from './jump-masks.js?v=controls-7';
 const scale=CAT_ART.width/CAT_ART.frameWidth;
 function catShape(cat,frame,color){
   const mask=(CAT_MASKS[color]||CAT_MASKS.gray)[frame]||CAT_MASKS.gray[0];
