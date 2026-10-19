@@ -1,0 +1,1 @@
+{"cell":{"w":360,"h":310,"ax":215,"ay":290},"columns":4,"rows":4,"colors":["gray","orange","cream","black"],"actions":{"idle":[0,1,2,3],"walk":[4,5,6,7],"push":[8,9,10,11],"hide":[12,13,14,15]}}

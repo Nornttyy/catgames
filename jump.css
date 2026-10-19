@@ -1,0 +1,19 @@
+#play.jump-mode .timer,#play.jump-mode .table-route,#play.jump-mode .play-bottom{display:none}
+.jump-streak{position:absolute;left:50%;top:max(26px,env(safe-area-inset-top));transform:translateX(-50%) rotate(-3deg);font-weight:900;font-size:17px;color:#665438;background:#fff5c8e8;border:2px solid var(--ink);border-radius:20px;padding:8px 14px;white-space:nowrap}
+.jump-streak.hot{background:#ffdf71;color:#68451c}
+#jump-press{position:absolute;bottom:max(32px,5%);left:17%;width:66%;height:76px;max-height:11%;min-height:54px;touch-action:none;user-select:none;-webkit-user-select:none;background:#ffd45d;border:3px solid var(--ink);border-radius:28px;box-shadow:0 6px 0 #b77930,0 9px 0 var(--ink);font-size:23px;font-weight:900;overflow:hidden;isolation:isolate}
+#jump-press:before{content:'';position:absolute;inset:0;background:#ffb44b;transform:scaleX(var(--charge,0));transform-origin:left;z-index:-1}
+#jump-press.charging{transform:translateY(4px)!important;box-shadow:0 2px 0 var(--ink)!important}
+#jump-press:disabled{opacity:.8;cursor:default}
+#play.jump-mode .tip{bottom:19%;font-size:14px;white-space:nowrap}
+#play.jump-mode #skip{bottom:1%;font-size:11px}
+/* Preserve the room; a scrollable toy shelf keeps the three cards readable. */
+#home .game-select{left:5%;right:5%;top:61.5%;height:23%;display:flex;gap:16px;overflow-x:auto;overflow-y:hidden;padding:14px 12px 20px;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior:contain;pointer-events:auto}
+#home .game-select::-webkit-scrollbar{display:none}
+#home .game-card{flex:0 0 45%;height:100%;scroll-snap-align:center;transform:rotate(-2deg)}
+#home .game-card[data-game=jump]{--card:#dce7ff;--tilt:-2deg}
+[data-game=jump] .game-art:before{background:#b8d1ef}
+#home .game-art .toy-jump-spikes{width:70%;height:28%;right:-9%;bottom:-2%;object-fit:contain}
+#home .toy-jump-cat{position:absolute;left:7%;top:-15%;width:85%;aspect-ratio:360/310;background:url('assets/cat-gray.png') 66.6667% 33.3333%/400% 400% no-repeat;transform:rotate(-9deg)}
+#home .shelf-next{position:absolute;right:1%;top:69%;width:30px;height:45px;border:2px solid var(--ink);background:#fff9e9;border-radius:16px;font-size:25px;font-weight:900;box-shadow:0 3px 0 #35322955}
+@media(max-height:680px){#home .game-select{top:61%;height:24%;padding-top:12px}.jump-streak{font-size:14px}#jump-press{font-size:20px}#play.jump-mode .tip{font-size:12px}}

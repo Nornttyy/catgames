@@ -1,8 +1,7 @@
 {
-  "engine": "Unity",
-  "editor": "6000.3.20f1",
-  "version": "1.0.0",
-  "gameplay": "native C# / IL2CPP / WebAssembly",
+  "engine": "Canvas 2D",
+  "version": "canvas-return-1",
+  "gameplay": "HTML / CSS / JavaScript / Canvas 2D",
   "modes": [
     "table",
     "fish",
@@ -10,22 +9,6 @@
     "race",
     "brawl"
   ],
-  "files": {
-    "Build/Web.loader.js": {
-      "sha256": "33d73d69670b8a69a98f719e631863b5fd70a1519350794824666d5a9b88201c",
-      "bytes": 47866
-    },
-    "Build/Web.data.unityweb": {
-      "sha256": "bb95cc3864f1d27721e8ec9588d891b17273522f36179985fb4ed3de334b3847",
-      "bytes": 43646195
-    },
-    "Build/Web.framework.js.unityweb": {
-      "sha256": "8717d3dac5a6e135e4ee59ef6f0ac6dfc88ceb254858070eedb364eab1858bcd",
-      "bytes": 80345
-    },
-    "Build/Web.wasm.unityweb": {
-      "sha256": "75514495f4a5e035016b37d5a2c957305d01b89c9d917386d396ff7db3ef5818",
-      "bytes": 3985001
-    }
-  }
+  "unity": "Archived in unity/; not loaded by the live site",
+  "saves": "One-time best-record merge from the Unity mirror; both originals retained"
 }

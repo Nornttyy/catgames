@@ -4,7 +4,8 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const project = path.resolve(process.argv[2] || path.join(repo, 'unity'));
+if (!process.argv.includes('--replace-live')) throw new Error('The live game is Canvas again. Unity is archived; pass --replace-live only for an explicitly requested Unity deployment.');
+const project = path.resolve(process.argv.slice(2).find(arg=>!arg.startsWith('--')) || path.join(repo, 'unity'));
 const build = path.join(project, 'Builds', 'Web');
 const htmlPath = path.join(build, 'index.html');
 if (!fs.existsSync(htmlPath)) throw new Error('Build Unity Web first: 小猫游戏多 → 构建网页试玩');
