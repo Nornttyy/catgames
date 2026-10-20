@@ -1,29 +1,29 @@
 /* Two thumb zones, not a toolbar. Keep the playfield visible between them. */
-#brawl-controls,#race-controls{
+#brawl-controls{
   --key:clamp(54px,14vw,68px);
   left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));
   bottom:max(14px,calc(env(safe-area-inset-bottom) + 9px));
   display:block;height:126px;pointer-events:none;
 }
-#brawl-controls .move-pad,#race-controls .move-pad{
+#brawl-controls .move-pad{
   position:absolute;left:0;bottom:4px;display:flex;gap:6px;
   pointer-events:auto;touch-action:none;border-radius:25px;
 }
-#brawl-controls button,#race-controls button{
+#brawl-controls button{
   width:var(--key);height:70px;min-height:70px;max-height:none;
   padding:6px 2px;gap:2px;pointer-events:auto;touch-action:none;
   border-radius:23px;transition:background-color .1s,box-shadow .06s,transform .06s;
   -webkit-touch-callout:none;
 }
-#brawl-controls .move-pad button:first-child,#race-controls .move-pad button:first-child{border-radius:25px 16px 16px 25px}
-#brawl-controls .move-pad button:last-child,#race-controls .move-pad button:last-child{border-radius:16px 25px 25px 16px}
-#brawl-controls button .icon,#race-controls button .icon{width:30px;height:30px;pointer-events:none}
-#brawl-controls button small,#race-controls button small{font-size:12px;font-weight:850;line-height:16px;opacity:1;pointer-events:none}
-#brawl-controls #brawl-attack,#race-controls #race-jump{
+#brawl-controls .move-pad button:first-child{border-radius:25px 16px 16px 25px}
+#brawl-controls .move-pad button:last-child{border-radius:16px 25px 25px 16px}
+#brawl-controls button .icon{width:30px;height:30px;pointer-events:none}
+#brawl-controls button small{font-size:12px;font-weight:850;line-height:16px;opacity:1;pointer-events:none}
+#brawl-controls #brawl-attack{
   position:absolute;right:0;bottom:4px;width:78px;height:78px;min-height:78px;
   border-radius:50% 43% 46% 44%;font-size:16px;
 }
-#brawl-controls #brawl-jump,#race-controls #race-slide{
+#brawl-controls #brawl-jump{
   position:absolute;right:90px;bottom:46px;width:60px;height:62px;min-height:62px;
   border-radius:23px;
 }
@@ -38,24 +38,24 @@
 #brawl-controls #brawl-drop:disabled{opacity:.35}
 #brawl-controls #brawl-attack.cooling{background:linear-gradient(#ffecba,#e6c990)}
 #brawl-attack .cooldown-label{position:absolute;top:8px;right:7px;min-width:22px;font-size:10px;line-height:16px;border-radius:8px;background:#fff9e9e8;color:#765835;pointer-events:none;font-variant-numeric:tabular-nums}
-#brawl-controls button.pressed,#race-controls button.pressed{transform:translateY(4px)!important;box-shadow:0 1px 0 var(--ui-edge)!important}
+#brawl-controls button.pressed{transform:translateY(4px)!important;box-shadow:0 1px 0 var(--ui-edge)!important}
 .key-hint{display:none;font:700 10px/12px system-ui;color:#746248;pointer-events:none}
 @media(hover:hover) and (pointer:fine){
   .key-hint{display:block}
   #brawl-controls #brawl-drop .key-hint{display:none}
-  #brawl-controls #brawl-jump,#race-controls #race-slide{gap:0;padding:3px 1px}
-  #brawl-controls #brawl-jump .icon,#race-controls #race-slide .icon{height:23px;width:23px}
+  #brawl-controls #brawl-jump{gap:0;padding:3px 1px}
+  #brawl-controls #brawl-jump .icon{height:23px;width:23px}
 }
-#play.brawl-mode .tip,#play.race-mode .tip{bottom:max(156px,calc(env(safe-area-inset-bottom) + 148px))}
+#play.brawl-mode .tip{bottom:max(156px,calc(env(safe-area-inset-bottom) + 148px))}
 #pause,#match-close,#close-picker,#learn,#sound-home{min-width:48px;min-height:48px}
 @media(max-width:360px){
-  #brawl-controls,#race-controls{left:12px;right:12px;--key:54px}
-  #brawl-controls #brawl-jump,#race-controls #race-slide{right:80px;width:58px}
-  #brawl-controls #brawl-attack,#race-controls #race-jump{width:70px;height:74px;min-height:74px}
+  #brawl-controls{left:12px;right:12px;--key:54px}
+  #brawl-controls #brawl-jump{right:80px;width:58px}
+  #brawl-controls #brawl-attack{width:70px;height:74px;min-height:74px}
 }
 @media(max-height:600px){
-  #brawl-controls,#race-controls{height:112px;bottom:max(10px,calc(env(safe-area-inset-bottom) + 6px))}
-  #brawl-controls button,#race-controls button{height:60px;min-height:60px}
+  #brawl-controls{height:112px;bottom:max(10px,calc(env(safe-area-inset-bottom) + 6px))}
+  #brawl-controls button{height:60px;min-height:60px}
   #brawl-controls #brawl-drop{bottom:74px}
-  #brawl-controls #brawl-jump,#race-controls #race-slide{bottom:38px}
+  #brawl-controls #brawl-jump{bottom:38px}
 }

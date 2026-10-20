@@ -8,6 +8,8 @@ export const CAT_CALLS={
 export const SAMPLES=[...new Set(Object.values(CAT_CALLS).flat()),'land','drop','ceramic','shield','tap','pluck','whoosh','lane','pickup','win','lose','tick'];
 export const MUSIC='./audio/cat-bgm.mp3';
 export const MAX_VOICES=8;
+export const MAX_CAT_VOICES=4;
+export const CAT_GAIN=.65;
 export class CatCallDeck{
   constructor(random=Math.random){this.random=random;this.bags=new Map();this.lastByCue=new Map();this.last=null;}
   next(key,available=()=>true){
@@ -103,27 +105,25 @@ export class GameAudio{
   setScene(scene){this.scene=scene;this.paused=false;this.mix();}
   setPaused(value){this.paused=value;if(value)this.stopVoices();this.mix();}
   setVisible(value){this.visible=value;if(!value){this.stopVoices();this.music?.pause();this.ctx?.suspend().catch(()=>{});}else if(!this.muted)this.ctx?.resume().catch(()=>{});this.mix();}
-  stopVoices(){for(const source of [...this.voices]){try{source.stop();}catch{}}this.voices.length=0;this.catVoice=null;}
+  stopVoices(){for(const source of [...this.voices]){try{source.stop();}catch{}}this.voices.length=0;}
   play(type,kind){
     if(this.muted||!this.visible||this.paused||this.ctx?.state!=='running')return false;
     const cue=soundCue(type,kind);if(!cue)return false;
     const c=this.ctx,now=c.currentTime,key=cue.name;
     if(now-(this.recent.get(key)??-10)<cue.gap)return false;
-    const catCall=!!CAT_CALLS[key],priority=key==='meow-hurt'?3:key==='meow-charge'?2:1;
-    // Keep hurt calls readable, but do not queue old actions to play late.
-    if(catCall&&this.catVoice&&this.catVoice.catPriority>priority)return false;
+    const catCall=!!CAT_CALLS[key];
+    // Let existing calls finish naturally. Excess events are skipped, never queued.
+    if(catCall&&this.voices.filter(v=>v.catCue).length>=MAX_CAT_VOICES)return false;
     const name=catCall?this.catCalls.next(key,n=>this.buffers.has(n)):key,buffer=this.buffers.get(name);
     if(!buffer)return false;this.recent.set(key,now);
-    if(catCall&&this.catVoice){
-      // A short crossfade avoids clicks when a hit interrupts another meow.
-      const old=this.catVoice;this.ramp(old.catGain.gain,0,.025);
-      try{old.stop(now+.025);}catch{}
+    while(this.voices.length>=MAX_VOICES){
+      const index=this.voices.findIndex(v=>!v.catCue);if(index<0)return false;
+      const [old]=this.voices.splice(index,1);try{old.stop();}catch{}
     }
-    while(this.voices.length>=MAX_VOICES){try{this.voices.shift().stop();}catch{}}
-    const source=c.createBufferSource(),gain=c.createGain();source.buffer=buffer;source.playbackRate.value=cue.rate;gain.gain.value=cue.gain;
-    if(catCall){source.catCue=key;source.catSample=name;source.catPriority=priority;source.catGain=gain;this.catVoice=source;}
+    const source=c.createBufferSource(),gain=c.createGain();source.buffer=buffer;source.playbackRate.value=cue.rate;gain.gain.value=cue.gain*(catCall?CAT_GAIN:1);
+    if(catCall){source.catCue=key;source.catSample=name;source.catGain=gain;}
     source.connect(gain);gain.connect(this.sfx);this.voices.push(source);
-    source.onended=()=>{source.disconnect();gain.disconnect();const i=this.voices.indexOf(source);if(i>=0)this.voices.splice(i,1);if(this.catVoice===source)this.catVoice=null;};
+    source.onended=()=>{source.disconnect();gain.disconnect();const i=this.voices.indexOf(source);if(i>=0)this.voices.splice(i,1);};
     source.start();return true;
   }
 }

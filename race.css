@@ -16,13 +16,6 @@
 #race-progress b{position:absolute;right:-10px;top:-21px;font-size:22px;transform:rotate(6deg)}
 .race-chain{position:absolute;top:83px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:7px;white-space:nowrap;color:#68583c;padding:6px 11px;border:2px solid #353229;background:#fff7d6;border-radius:18px;box-shadow:0 3px 0 #35322924}
 .race-chain>span{font-size:20px}.race-chain strong{font-size:16px}.race-chain small{font-size:10px}.race-chain .boosting{color:#c75d34}
-#race-controls{position:absolute;left:6%;right:6%;bottom:max(26px,4%);display:grid;grid-template-columns:.9fr 1.1fr 1.1fr .9fr;gap:12px}
-#race-controls button{min-height:58px;height:8svh;max-height:74px;min-width:0;border:3px solid var(--ink);border-radius:21px;background:#c7e8e7;box-shadow:0 5px 0 #78aaa1,0 8px 0 var(--ink);font-size:28px;font-weight:900;touch-action:none;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;padding:2px}
-#race-controls button small{font-size:13px;line-height:14px;opacity:.65}
-#race-controls #race-left,#race-controls #race-right{background:#fff3cc;box-shadow:0 5px 0 #c7ad77,0 8px 0 var(--ink);font-size:34px}
-#race-controls #race-jump{background:#ffdb68;box-shadow:0 5px 0 #bf8c3b,0 8px 0 var(--ink)}
-#race-controls button.active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
-#race-controls button:disabled{opacity:.6}
-#play.race-mode .tip{bottom:16%;font-size:13px}
-@media(max-width:360px){#race-hud{left:128px;right:22%;top:23px}.race-meta{font-size:9px}.race-meta strong{font-size:13px}.race-chain{top:79px}.race-chain small{display:none}#race-controls{gap:9px;left:5%;right:5%}#race-controls button{font-size:23px;min-height:54px}}
-@media(max-height:680px){.race-chain{top:70px}#race-controls{bottom:4%;gap:9px}#race-controls button{min-height:52px;height:9svh;font-size:23px}#play.race-mode .tip{bottom:17%;font-size:11px}}
+#play.race-mode .tip{bottom:max(22px,calc(env(safe-area-inset-bottom) + 16px));left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:90%;font-size:13px;pointer-events:none}
+@media(max-width:360px){#race-hud{left:128px;right:22%;top:23px}.race-meta{font-size:9px}.race-meta strong{font-size:13px}.race-chain{top:79px}.race-chain small{display:none}}
+@media(max-height:680px){.race-chain{top:70px}#play.race-mode .tip{font-size:11px}}

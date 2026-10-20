@@ -1,23 +1,48 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {soundCue,SAMPLES,GameAudio,CAT_CALLS,CatCallDeck} from '../audio.js';
+import {soundCue,SAMPLES,GameAudio,CAT_CALLS,CatCallDeck,CAT_GAIN,MAX_CAT_VOICES,MAX_VOICES} from '../audio.js';
 test('jump and hurt use distinct, short locally packaged cat calls',()=>{
  assert.equal(soundCue('jump').name,'meow-jump');
  for(const type of ['brawl-hit','bonk'])assert.equal(soundCue(type).name,'meow-hurt');
  assert.equal(soundCue('shield-break').name,'shield');
  for(const name of ['meow-jump','meow-hurt']){assert.ok(SAMPLES.includes(name));const b=fs.readFileSync(new URL(`../audio/${name}.wav`,import.meta.url));assert.equal(b.toString('ascii',0,4),'RIFF');assert.equal(b.toString('ascii',8,12),'WAVE');assert.ok(b.length>25000&&b.length<65000);}
 });
-test('hurt takes priority and cat calls do not pile up',()=>{
- const audio=new GameAudio();audio.ctx={state:'running',currentTime:1,createGain:()=>({gain:{value:1,cancelScheduledValues(){},setValueAtTime(){},linearRampToValueAtTime(){}},connect(){},disconnect(){}}),createBufferSource:()=>({playbackRate:{},connect(){},disconnect(){},start(){},stop(time){this.stopAt=time;this.stopped=true;this.onended?.();}})};
- audio.sfx={};audio.buffers.set('meow-jump',{});audio.buffers.set('meow-hurt',{});
- assert.equal(audio.play('jump'),true);const jump=audio.catVoice;audio.ctx.currentTime+=.1;
- assert.equal(audio.play('brawl-hit'),true);assert.equal(jump.stopped,true);assert.equal(audio.voices.length,1);
- assert.ok(Math.abs(jump.stopAt-1.125)<.001);
- audio.ctx.currentTime+=.3;
- for(const event of ['jump','race-slide','brawl-charge'])assert.equal(audio.play(event),false);
- assert.equal(audio.catVoice.catCue,'meow-hurt');
- audio.stopVoices();assert.equal(audio.catVoice,null);assert.equal(audio.voices.length,0);
+function mockAudio(){
+ const audio=new GameAudio();audio.ctx={state:'running',currentTime:1,createGain:()=>({gain:{value:1},connect(){},disconnect(){}}),createBufferSource:()=>({playbackRate:{},connect(){},disconnect(){},start(){},stop(){this.stopped=true;this.onended?.();}})};
+ audio.sfx={};for(const name of SAMPLES)audio.buffers.set(name,{});
+ return audio;
+}
+test('jump, hurt, slide and charge can overlap without cutting each other off',()=>{
+ const audio=mockAudio();
+ for(const event of ['jump','brawl-hit','race-slide','brawl-charge'])assert.equal(audio.play(event),true,event);
+ assert.equal(audio.voices.length,4);
+ for(const voice of audio.voices)assert.ok(!voice.stopped);
+ const retained=[...audio.voices];
+ audio.stopVoices();assert.equal(audio.voices.length,0);
+ for(const voice of retained)assert.equal(voice.stopped,true);
+});
+test('cat voices are 35 percent quieter; at capacity existing calls finish naturally',()=>{
+ const audio=mockAudio();assert.equal(CAT_GAIN,.65);assert.equal(MAX_CAT_VOICES,4);
+ for(const event of ['jump','brawl-hit','race-slide','brawl-charge']){
+   assert.equal(audio.play(event),true);
+   assert.equal(audio.voices.at(-1).catGain.gain.value,soundCue(event).gain*.65);
+ }
+ const oldest=audio.voices[0];audio.ctx.currentTime+=.4;
+ assert.equal(audio.play('jump'),false);assert.ok(!oldest.stopped);
+ oldest.onended();assert.equal(audio.play('jump'),true);assert.equal(audio.voices.length,4);
+});
+test('busy effects cannot steal a playing cat call, and rapid repeats remain throttled',()=>{
+ const audio=mockAudio();assert.equal(audio.play('jump'),true);const cat=audio.voices[0];
+ assert.equal(audio.play('jump'),false);
+ for(let i=0;i<20;i++){audio.ctx.currentTime+=.1;audio.play('tap');}
+ assert.equal(audio.voices.length,MAX_VOICES);assert.ok(audio.voices.includes(cat));assert.ok(!cat.stopped);
+});
+test('pause, mute and hidden-tab state still block new voices',()=>{
+ for(const key of ['paused','muted','visible']){
+   const audio=mockAudio();audio[key]=key==='visible'?false:true;
+   assert.equal(audio.play('jump'),false);assert.equal(audio.voices.length,0);
+ }
 });
 test('jump, slide, charge and hurt each have three recordings, not just pitch shifts',()=>{
  assert.equal(soundCue('race-slide').name,'meow-slide');
