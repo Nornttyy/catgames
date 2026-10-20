@@ -8,7 +8,7 @@ export function jumpSpeed(charge){return JUMP.minSpeed+(JUMP.maxSpeed-JUMP.minSp
 export function flightTime(){return 2*JUMP.launchY/JUMP.gravity;}
 export function createJumpGame({tutorial=true,random=Math.random,color='gray'}={}){
   const s={status:'play',paused:false,phase:'ready',age:0,charge:0,score:0,jumps:0,cleared:0,streak:0,bestStreak:0,tutorial,color,
-    cat:{x:140,y:0,vx:0,vy:0},camera:0,nextId:1,random,hazards:[],events:[],fx:[],landTime:0,deathTime:0,reason:null};
+    cat:{x:140,y:0,vx:0,vy:0},safeX:140,camera:0,nextId:1,random,hazards:[],events:[],fx:[],landTime:0,deathTime:0,reason:null};
   while(s.hazards.length<6)addHazard(s);return s;
 }
 export function addHazard(s){
@@ -47,6 +47,7 @@ function fail(s){
 function land(s){
   s.cat.y=0;s.cat.vy=0;s.cat.vx=0;s.phase='ready';s.charge=0;s.landTime=.19;s.jumps++;
   if(checkSpikes(s))return;
+  s.safeX=s.cat.x;
   const left=catLeft(s.cat,jumpFrame(s),s.color);
   const passed=s.hazards.filter(h=>!h.cleared&&left>h.x+h.w/2);
   for(const h of passed)h.cleared=true;

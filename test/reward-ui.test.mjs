@@ -36,6 +36,15 @@ test('actual reward dialog gates claims, traps focus, closes safely and restores
    assert.equal(ui.open({...request,placement:'unknown'}),false);
    ui.open(request);handlers.keydown({key:'Escape',preventDefault(){},stopImmediatePropagation(){}});
    assert.equal(ui.isOpen,false);assert.equal(paid,40);
+   let revived=0;
+   assert.equal(ui.open({placement:'revive',onClaim(){revived++;}}),true);
+   assert.equal(nodes.get('ad-claim').textContent,'看完后复活');
+   nodes.get('ad-claim').onclick();assert.equal(revived,0);
+   nodes.get('ad-close').onclick();assert.equal(revived,0);
+   ui.open({placement:'revive',onClaim(){revived++;}});
+   for(let i=0;i<21;i++)advance();
+   assert.equal(nodes.get('ad-claim').textContent,'复活继续');
+   nodes.get('ad-claim').onclick();nodes.get('ad-claim').onclick();assert.equal(revived,1);assert.equal(paid,40);
  }finally{
    for(const [key,descriptor] of Object.entries(original)){if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];}
  }

@@ -38,8 +38,12 @@ export function coinsForRound(mode,s,result){
   return 0;
 }
 export function settleRound(wallet,id,mode,state,result){
-  if(!id||wallet.lastRound?.id===id)return 0;
+  if(!id)return 0;
   const coins=coinsForRound(mode,state,result);
+  if(wallet.lastRound?.id===id){
+    const round=wallet.lastRound,delta=Math.max(0,coins-round.coins),earned=delta*(round.doubled?2:1);
+    round.coins=Math.max(round.coins,coins);wallet.coins=integer(wallet.coins+earned);return earned;
+  }
   wallet.coins=integer(wallet.coins+coins);wallet.lastRound={id,coins,doubled:false};return coins;
 }
 export function doubleRound(wallet,id){

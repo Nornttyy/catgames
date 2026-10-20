@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="controls.css?v=swipe-1">
 <link rel="stylesheet" href="mobile-input.css?v=touch-1">
 <link rel="stylesheet" href="economy.css?v=coins-1">
+<link rel="stylesheet" href="usability.css?v=revive-6">
 </head>
 <body>
 <main id="game" aria-label="小猫游戏多">
@@ -109,6 +110,7 @@
   <section id="match-setup" class="shade" hidden aria-label="选择地图和难度"><div class="paper match-paper"><header><h2 id="match-title">跑一场</h2><button id="match-close" class="round" aria-label="返回主菜单">×</button></header><div id="match-maps" role="group" aria-label="地图"></div><div class="difficulty-choices" role="group" aria-label="难度"><button data-difficulty="casual">休闲</button><button data-difficulty="normal">普通</button><button data-difficulty="hard">困难</button></div><p id="match-record"></p><button id="match-start" class="primary">出发 ▶</button></div></section>
   <section id="paused" class="shade" hidden><div class="paper"><h2>暂停</h2><button id="resume" class="primary">继续</button><button id="pause-home" class="secondary">回到客厅</button><button id="sound-pause" class="text-button sound">关闭声音</button><a href="audio-credits.html" target="_blank" rel="noopener" style="display:block;font-size:12px;color:#776c5e;margin-top:12px">声音署名</a></div></section>
   <section id="result" class="shade" hidden aria-label="本局结算"><div class="confetti" aria-hidden="true"></div><div class="paper result-paper"><div class="result-mark" aria-hidden="true"><svg class="icon"><use href="#icon-cup"/></svg></div><h2 id="result-title"></h2><strong id="result-score">0</strong><span id="result-record" hidden>刷新纪录</span><div id="result-stats"></div>
+    <button id="result-revive" class="reward-button revive-button" hidden><span class="ad-play" aria-hidden="true">▶</span><span><strong>看广告复活</strong><small id="revive-hint"></small></span><span class="reward-label">模拟广告<br>每局一次</span></button>
     <div id="result-coins"><span id="result-coins-label">本局金币 · 已入账</span><strong class="coin-balance"><span class="coin-icon" aria-hidden="true"><svg class="icon"><use href="#icon-paw"/></svg></span><b id="result-coins-value">+0</b></strong></div>
     <p id="result-coins-note" hidden>完成操作可以赚金币</p>
     <button id="result-double" class="reward-button" hidden><span class="reward-label">模拟广告</span><span id="result-double-copy">金币翻倍</span></button>
@@ -128,5 +130,6 @@
       <p id="ad-disclosure" class="ad-explain">仅功能演示 · 非真实广告 · 不跳转</p>
     </div>
   </section>
-</main><script type="module" src="app.js?v=canvas-return-cat-coins-5"></script>
+  <div id="revive-ready" hidden aria-live="polite"><span>准备继续</span><strong id="revive-count">2</strong></div>
+</main><script type="module" src="app.js?v=canvas-return-revive-6"></script>
 </body></html>

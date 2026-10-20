@@ -1,0 +1,81 @@
+/* Finger-sized controls in CSS pixels, independent of the canvas resolution. */
+#game button:not(.hit-target):not(.home-cat):not(.paw-target){min-width:48px;min-height:48px}
+#game .primary{min-height:58px;font-size:22px}
+#game .secondary{min-height:52px;font-size:18px}
+#game .round{width:52px;height:52px;min-width:52px;flex-shrink:0}
+#game .text-button{font-size:15px;min-height:48px;padding:12px}
+#home #start{left:12%;width:76%;min-height:60px}
+#home .home-wardrobe{min-width:76px;min-height:76px;font-size:15px;padding:12px}
+#home .shelf-next{width:52px;height:60px;top:69%;font-size:34px}
+#game #home-wallet{min-width:126px;min-height:50px;gap:10px;font-size:20px;padding:7px 12px}
+#game #sound-home{width:52px;height:52px}
+#home-wallet .coin-plus{width:26px;height:26px;font-size:23px}
+#picker .motions button{flex:1;min-height:48px;font-size:15px;padding:8px 4px}
+#picker .colors button{min-height:86px}
+#picker .colors strong{font-size:16px}
+#picker .colors small{font-size:12px}
+#picker #select-cat{min-height:58px;font-size:21px}
+#game .reward-button{min-height:58px;font-size:17px;padding:12px 10px;gap:10px;border-width:2px}
+.reward-label{font-size:11px;line-height:1.4;padding:3px 5px}
+#game #ad-claim{min-height:58px;font-size:19px}
+#game .difficulty-choices button{min-height:52px}
+.shade{padding:20px}
+.paper{padding-left:20px;padding-right:20px}
+#result .result-paper{max-height:calc(100svh - 40px)}
+#result .result-paper .primary{min-height:58px}
+#result .revive-button{margin:0 0 16px;background:#b6e8cb;border-color:#4e8066;box-shadow:0 4px 0 #739e83;text-align:left}
+.revive-button>span:nth-child(2){flex:1}
+.revive-button strong{display:block;font-size:20px;white-space:nowrap}
+.revive-button small{display:block;font-size:12px;line-height:1.5;margin-top:3px;color:#486951;font-weight:650}
+.revive-button .reward-label{flex:none;text-align:center}
+.ad-play{width:32px;height:32px;display:grid;place-items:center;background:#fff9e9;border-radius:50%;color:#47785c;font-size:15px;flex:none}
+#revive-ready{position:absolute;inset:0;z-index:9;display:grid;place-content:center;justify-items:center;gap:12px;background:#304e3928;touch-action:none;pointer-events:auto}
+#revive-ready span{background:#fff9e9;border:2px solid #527257;border-radius:22px;padding:10px 20px;font-weight:850;font-size:19px}
+#revive-count{font-size:72px;color:#fff9e9;text-shadow:0 4px #426c56;-webkit-text-stroke:2px #426c56;line-height:1}
+/* Keep navigation left and actions right, with a full thumb gap between them. */
+#brawl-controls{--key:clamp(64px,18vw,82px);height:202px}
+#brawl-controls .move-pad{gap:8px}
+#brawl-controls button{height:82px;min-height:82px;border-radius:26px}
+#brawl-controls button .icon{width:36px;height:36px}
+#brawl-controls button small{font-size:14px;line-height:18px}
+#brawl-controls #brawl-attack{width:96px;height:96px;min-height:96px;bottom:4px}
+#brawl-controls #brawl-jump{right:7px;bottom:114px;width:82px;height:78px;min-height:78px}
+#brawl-controls #brawl-drop{left:calc(var(--key) - 28px);bottom:104px;width:64px;height:60px;min-height:60px}
+#brawl-controls #brawl-drop .icon{width:24px;height:24px}
+#brawl-controls #brawl-drop small{font-size:13px;line-height:16px}
+#play.brawl-mode .tip{bottom:max(220px,calc(env(safe-area-inset-bottom) + 212px))}
+#game .walk-buttons button{width:64px;height:64px;font-size:30px}
+.walk-buttons{gap:8px}
+.play-bottom{left:5%;right:5%}
+#play:not(.fish-mode) .play-bottom #progress{position:absolute;left:0;bottom:80px}
+#game #hide,#game #retract{min-height:58px;font-size:18px}
+#game #jump-press{min-height:64px;font-size:20px}
+@media(max-width:360px){
+  #brawl-controls{left:12px;right:12px;--key:64px}
+  #brawl-controls #brawl-attack{width:86px;height:86px;min-height:86px}
+  #brawl-controls #brawl-jump{right:3px;bottom:104px;width:78px}
+  #home .home-wardrobe{right:3%;min-width:68px;min-height:70px;font-size:14px;padding:10px 7px}
+  #home .shelf-next{width:48px}
+  .shade{padding:14px}
+  .paper{padding-left:16px;padding-right:16px}
+  #result .result-paper{padding-left:16px;padding-right:16px;max-height:calc(100svh - 28px)}
+  #picker .picker-head{gap:7px}
+  #picker .picker-head h2{font-size:18px}
+  .revive-button strong{font-size:18px}
+  .revive-button .ad-play{display:none}
+}
+@media(max-height:680px){
+  #home .home-brand{top:10%;height:20%}
+  #home #start{bottom:3%;min-height:56px}
+  #picker .picker-bottom{gap:9px}
+  #picker .colors button{min-height:78px}
+  #picker .motions button{min-height:48px}
+  #result .result-mark{width:42px;height:42px;margin-bottom:5px}
+  #result-score{font-size:34px;margin-top:5px}
+  #result-stats{margin:8px 0}
+  .result-stat{padding:5px 2px}
+  #result .result-paper h2{margin-bottom:4px}
+  #result .revive-button{margin-bottom:12px}
+  #result-double{margin-bottom:12px}
+  .ad-stage{height:120px}
+}

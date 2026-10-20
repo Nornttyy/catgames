@@ -4,7 +4,7 @@ import {FISH_HOME,FISH_GOAL,FISH_CAPACITY,FISH_CHANCES,haulValue,createFishGame,
 import {drawFishScene,projectFishY,unprojectFishY} from './fish-view.js?v=controls-7';
 import {FISH_PROP_ART} from './fish-props.js?v=controls-7';
 import {homeLayout,drawHomeScene} from './home-view.js?v=controls-7';
-import {JUMP,createJumpGame,beginJump,releaseJump,cancelJump,updateJump} from './jump-model.js?v=controls-7';
+import {JUMP,createJumpGame,beginJump,releaseJump,cancelJump,updateJump} from './jump-model.js?v=revive-6';
 import {drawJumpScene,JUMP_BASE} from './jump-view.js?v=controls-7';
 import {RACE,createRace,raceAction,updateRace} from './race-model.js?v=controls-7';
 import {drawRaceScene,raceScreenPoint} from './race-view.js?v=controls-7';
@@ -21,8 +21,9 @@ import {ActionBuffer,DirectionPad,bindDirectionPad} from './touch-controls.js?v=
 import {loadSave} from './save-store.js?v=canvas-return-1';
 import {installTouchGuards,PointerOwner} from './mobile-input.js?v=touch-1';
 import {bindRaceSwipes} from './race-input.js?v=swipe-1';
-import {CATS,GIFT_COINS,loadEconomy,ownsCat,equippedCat,buyCat,settleRound,doubleRound,giftsLeft,claimGift} from './economy.js?v=coins-1';
-import {bindRewardAd} from './reward-ui.js?v=coins-1';
+import {CATS,GIFT_COINS,loadEconomy,ownsCat,equippedCat,buyCat,settleRound,doubleRound,giftsLeft,claimGift} from './economy.js?v=revive-6';
+import {bindRewardAd} from './reward-ui.js?v=revive-6';
+import {canRevive,reviveGame,reviveHint} from './revive.js?v=revive-6';
 const $=id=>document.getElementById(id),canvas=$('scene'),ctx=canvas.getContext('2d'),root=$('game');
 installTouchGuards(root);
 const saved=loadSave();
@@ -79,6 +80,8 @@ function showResult(summary){
     const bit=document.createElement('i');bit.style.setProperty('--x',`${(i*37)%100}%`);bit.style.setProperty('--delay',`${(i%7)*.065}s`);bit.style.setProperty('--c',['#ffd45e','#80d9bb','#ff9b82','#fff8da'][i%4]);confetti.append(bit);
   }
   syncEconomy();$('result').hidden=false;
+  $('result-revive').hidden=!canRevive(mode,game);
+  $('revive-hint').textContent=reviveHint(mode);
 }
 function save(){try{localStorage.setItem('cat-games-v1',JSON.stringify({...saved,color,economy,muted,best,taught,mode,fishBest,fishTaught,jumpBest,jumpTaught,raceBest,raceTaught,brawlBest,brawlTaught,matchSettings,matchRecords}))}catch{}}
 function syncEconomy(){
@@ -111,6 +114,21 @@ $('result-double').onclick=()=>{
   if(!round||round.id!==id||round.doubled||!round.coins)return;
   rewardAd.open({placement:'result',coins:round.coins,onClaim(){if(doubleRound(economy,id)){save();syncEconomy();pulse($('result-coins'));}}});
 };
+$('result-revive').onclick=()=>{
+  if(!canRevive(mode,game))return;
+  const round=game,id=roundId;
+  rewardAd.open({placement:'revive',onClaim(){
+    if(game!==round||id!==roundId||!reviveGame(mode,game))return;
+    clearJumpInput();keys.clear();effects.length=0;particles.length=0;
+    $('result').hidden=true;$('result-revive').hidden=true;$('revive-ready').hidden=false;$('revive-count').textContent='2';
+    if(mode==='brawl')setBrawlViewport(game,ratio,true);
+    audio.setScene('play');updateHud();
+  }});
+};
+// The countdown covers both pointer and keyboard input; no buffered jump on return.
+for(const type of ['pointerdown','click','keydown'])document.addEventListener(type,e=>{
+  if(game?.reviveWait>0&&!game.paused&&!rewardAd.isOpen){e.preventDefault();e.stopImmediatePropagation();}
+},true);
 document.addEventListener('keydown',e=>{
   if($('wallet').hidden||rewardAd.isOpen)return;
   if(e.key==='Escape'){e.preventDefault();closeWallet();}
@@ -137,7 +155,7 @@ $('loading-cat').addEventListener('animationend',()=>$('loading-cat').classList.
 $('retry-load').onclick=load;
 function syncHome(){document.querySelectorAll('[data-game]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.game===mode));const records={table:best,fish:fishBest,jump:jumpBest};document.querySelectorAll('[data-record]').forEach(el=>{const m=el.dataset.record,n=m==='brawl'?brawlBest:raceBest;el.textContent=['race','brawl'].includes(m)?(n?`最佳第 ${n} 名`:m==='brawl'?'6 猫混战 · 人机':'3 猫同跑 · 人机'):`纪录 ${records[m]}`;});$('start').innerHTML=`${{fish:'去偷吃',table:'开始捣蛋',jump:'出去跳一跳',race:'去跑酷',brawl:'去开打'}[mode]} <span aria-hidden="true">▶</span>`;document.querySelectorAll('.shelf-dots i').forEach((el,i)=>el.classList.toggle('current',i===MODES.indexOf(mode)));document.querySelector(`[data-game="${mode}"]`)?.scrollIntoView({block:'nearest',inline:'center',behavior:motion.matches?'instant':'smooth'});}
 function clearJumpInput(){if(game&&mode==='jump')cancelJump(game);if(game&&mode==='fish'&&dragging)retractPaw(game);dragPointer.clear();dragging=false;tablePad.clear();walkHeld=0;jumpPointer=null;jumpKey=false;raceSwipes?.clear();brawlPad.clear();actionBuffer.clear();brawlTapUntil=0;document.querySelectorAll('.pressed').forEach(b=>b.classList.remove('pressed'));}
-function show(next){clearJumpInput();screen=next;audio.setScene(next);dragging=false;walkHeld=0;keys.clear();particles.length=0;for(const id of ['loading','home','picker','play'])$(id).hidden=id!==next;$('paused').hidden=true;$('result').hidden=true;$('wallet').hidden=true;$('home').inert=false;if(next==='home'){syncHome();game=null;$('scene').setAttribute('aria-label','客厅里的猫猫');}if(next==='picker'){previewTime=0;pickerColor=color;}syncEconomy();}
+function show(next){clearJumpInput();if(game)game.reviveWait=0;$('revive-ready').hidden=true;screen=next;audio.setScene(next);dragging=false;walkHeld=0;keys.clear();particles.length=0;for(const id of ['loading','home','picker','play'])$(id).hidden=id!==next;$('paused').hidden=true;$('result').hidden=true;$('wallet').hidden=true;$('home').inert=false;if(next==='home'){syncHome();game=null;$('scene').setAttribute('aria-label','客厅里的猫猫');}if(next==='picker'){previewTime=0;pickerColor=color;}syncEconomy();}
 document.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>{mode=b.dataset.game;syncHome();save();sound('tap');});
 $('shelf-next').onclick=()=>{mode=MODES[(MODES.indexOf(mode)+1)%MODES.length];syncHome();save();sound('tap');};
 function resize(){const rect=root.getBoundingClientRect();width=rect.width;height=rect.height;const dpr=Math.min(2,devicePixelRatio||1);for(const [c,context] of [[canvas,ctx],[fxCanvas,fxCtx]]){c.width=Math.round(width*dpr);c.height=Math.round(height*dpr);context.setTransform(dpr*width/600,0,0,dpr*height/900,0,0);}ratio=(width/600)/(height/900);if(mode==='brawl'&&game)setBrawlViewport(game,ratio);const hit=homeLayout(ratio).hit;Object.assign($('home-cat').style,{left:`${hit.x/6}%`,top:`${hit.y/9}%`,width:`${hit.w/6}%`,height:`${hit.h/9}%`});layoutPicker();}
@@ -205,9 +223,9 @@ $('match-close').onclick=()=>$('match-setup').hidden=true;$('match-start').oncli
 $('start').onclick=openMatch;$('learn').onclick=()=>start(true);$('replay').onclick=()=>start();
 $('result-home').onclick=$('pause-home').onclick=()=>show('home');
 $('pause').onclick=()=>pause();$('resume').onclick=()=>resume();
-function resume(){if(!game||game.status!=='play')return;clearJumpInput();keys.clear();game.paused=false;audio.setPaused(false);$('paused').hidden=true;}
+function resume(){if(!game||game.status!=='play')return;clearJumpInput();keys.clear();game.paused=false;audio.setPaused(false);$('paused').hidden=true;$('revive-ready').hidden=!(game.reviveWait>0);}
 function togglePause(){if(game?.paused)resume();else pause();}
-function pause(){walkHeld=0;dragging=false;keys.clear();clearJumpInput();if(game?.status==='play'){if(mode==='fish')retractPaw(game);game.paused=true;audio.setPaused(true);$('paused').hidden=false;}}
+function pause(){walkHeld=0;dragging=false;keys.clear();clearJumpInput();if(game?.status==='play'){if(mode==='fish')retractPaw(game);game.paused=true;audio.setPaused(true);$('revive-ready').hidden=true;$('paused').hidden=false;}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();audio.setVisible(!document.hidden);});
 $('skip').onclick=()=>{if(mode==='race'){game.tutorial=false;raceTaught=true;}else if(mode==='jump'){game.tutorial=false;jumpTaught=true;}else if(mode==='fish'){game.tutorial=null;fishTaught=true;}else{skipTutorial(game);taught=true;}save();updateHud();};
 $('retract').onclick=()=>{if(game&&mode==='fish')retractPaw(game);};
@@ -237,7 +255,7 @@ function pointerMove(e){if(screen!=='play'||!game||game.paused||mode==='race')re
 function pointerUp(e){if(mode==='race')return;if(mode==='jump'){if(e.pointerId===jumpPointer){jumpPointer=null;if(game){if(e.type==='pointerup')releaseJump(game);else cancelJump(game);}}return;}if(!dragPointer.release(e.pointerId))return;if(dragging&&mode==='fish'&&game)retractPaw(game);dragging=false;}
 for(const el of [canvas,$('fish-paw'),$('jump-press')]){el.addEventListener('pointerdown',pointerDown);el.addEventListener('pointermove',pointerMove);for(const event of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(event,pointerUp);}
 $('fish-paw').onclick=e=>{if(e.detail===0&&game&&mode==='fish')beginReach(game,game.paw.x,game.paw.y);};
-function controlsReady(){return screen==='play'&&game?.status==='play'&&!game.paused&&(mode==='brawl'?game.phase==='fight'&&game.cats[0].hp>0:mode==='race'&&game.phase==='run');}
+function controlsReady(){return screen==='play'&&game?.status==='play'&&!game.paused&&!game.reviveWait&&(mode==='brawl'?game.phase==='fight'&&game.cats[0].hp>0:mode==='race'&&game.phase==='run');}
 function flushActions(){
   if(!controlsReady()){actionBuffer.clear();return;}
   actionBuffer.flush(clock,action=>{
@@ -436,7 +454,10 @@ function handleEvents(){for(const e of game.events.splice(0)){
 }}
 function loop(now){
   const dt=Math.min(.04,(now-last)/1000||0);last=now;clock+=dt;previewTime+=dt;
-  if(game&&screen==='play'&&!game.paused){
+  if(game?.reviveWait>0&&screen==='play'&&!game.paused&&!rewardAd.isOpen){
+    game.reviveWait=Math.max(0,game.reviveWait-dt);$('revive-count').textContent=Math.ceil(game.reviveWait);
+    if(!game.reviveWait){$('revive-ready').hidden=true;clearJumpInput();keys.clear();canvas.focus({preventScroll:true});}
+  }else if(game&&screen==='play'&&!game.paused&&!rewardAd.isOpen){
     if(mode==='brawl'){
       const dx=(keys.has('d')||keys.has('arrowright')||brawlPad.value>0?1:0)-(keys.has('a')||keys.has('arrowleft')||brawlPad.value<0?1:0);
       updateBrawl(game,dt,dx||(clock<brawlTapUntil?brawlTapDirection:0));
