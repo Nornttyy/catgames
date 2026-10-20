@@ -1,7 +1,7 @@
 // Local licensed recordings. One shared mixer, bounded voices, no oscillator beeps.
 export const CAT_CALLS={
-  'meow-jump':['meow-jump','meow-mew','meow-chirp'],
-  'meow-slide':['meow-chirp','meow-short','meow-mew'],
+  'meow-jump':['meow-jump','meow-mew','meow-short'],
+  'meow-slide':['meow-jump','meow-short','meow-mew'],
   'meow-charge':['meow-short','meow-jump','meow-mew'],
   'meow-hurt':['meow-hurt','meow-grumble','meow-short'],
 };

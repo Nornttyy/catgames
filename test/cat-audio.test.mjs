@@ -33,7 +33,7 @@ test('jump, slide, charge and hurt each have three recordings, not just pitch sh
      assert.ok(wav.length>20000&&wav.length<130000);
    }
  }
- assert.equal(unique.size,6);assert.equal(SAMPLES.length,new Set(SAMPLES).size);
+ assert.equal(unique.size,5);assert.equal(SAMPLES.length,new Set(SAMPLES).size);
 });
 test('variety deck cycles the whole action pool without consecutive repeats',()=>{
  const deck=new CatCallDeck(()=>0);
@@ -50,11 +50,17 @@ test('switching actions avoids the last recording and unloaded clips never get p
    const name=deck.next(Object.keys(CAT_CALLS)[i%4]);assert.notEqual(name,prev);prev=name;
  }
  assert.equal(deck.next('meow-jump',()=>false),null);
- assert.equal(deck.next('meow-slide',n=>n==='meow-chirp'),'meow-chirp');
+ assert.equal(deck.next('meow-slide',n=>n==='meow-short'),'meow-short');
 });
-test('preloading includes all six cat recordings exactly once',async()=>{
+test('preloading includes all five retained cat recordings exactly once',async()=>{
  const urls=[];const audio=new GameAudio({fetcher:async url=>{urls.push(url);return {ok:true,arrayBuffer:async()=>new ArrayBuffer(8)};}});
  await audio.preload();await audio.preload();
  assert.equal(urls.length,SAMPLES.length);
- assert.equal(urls.filter(url=>url.includes('meow-')).length,6);
+ assert.equal(urls.filter(url=>url.includes('meow-')).length,5);
+ assert.ok(!urls.some(url=>url.includes('meow-chirp')));
+});
+test('rejected sample 3 is neither packaged nor selectable by any action',()=>{
+ assert.ok(!SAMPLES.includes('meow-chirp'));
+ assert.ok(!Object.values(CAT_CALLS).flat().includes('meow-chirp'));
+ assert.equal(fs.existsSync(new URL('../audio/meow-chirp.wav',import.meta.url)),false);
 });
