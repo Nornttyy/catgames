@@ -13,13 +13,15 @@ import {makeBurst,tickParticles,drawParticles} from './feedback.js?v=controls-7'
 import {BRAWL,createBrawl,brawlAction,updateBrawl} from './brawl-model.js?v=controls-7';
 import {drawBrawlScene} from './brawl-view.js?v=controls-7';
 import {setBrawlViewport,brawlScreenPoint} from './brawl-camera.js?v=controls-7';
-import {GameAudio} from './audio.js?v=cat-meows-1';
+import {GameAudio} from './audio.js?v=cat-meows-2';
 import {loadAssets} from './asset-loader.js?v=controls-7';
 import {MAPS,DIFFICULTIES,difficultyKey,mapFor} from './match-options.js?v=controls-7';
 import {drawCatSprite} from './cat-sprite.js?v=controls-7';
 import {ActionBuffer,DirectionPad,bindDirectionPad} from './touch-controls.js?v=controls-7';
 import {loadSave} from './save-store.js?v=canvas-return-1';
+import {installTouchGuards,PointerOwner} from './mobile-input.js?v=touch-1';
 const $=id=>document.getElementById(id),canvas=$('scene'),ctx=canvas.getContext('2d'),root=$('game');
+installTouchGuards(root);
 const saved=loadSave();
 let color=COLORS.includes(saved.color)?saved.color:'gray',muted=!!saved.muted,best=Number(saved.best)||0,taught=!!saved.taught;
 const MODES=['table','fish','jump','race','brawl'];
@@ -27,7 +29,7 @@ let mode=MODES.includes(saved.mode)?saved.mode:'brawl',fishBest=Number(saved.fis
 let jumpBest=Number(saved.jumpBest)||0,jumpTaught=!!saved.jumpTaught,jumpPointer=null,jumpKey=false;
 let raceBest=Number(saved.raceBest)||0,raceTaught=!!saved.raceTaught,racePointer=null;
 let brawlBest=Number(saved.brawlBest)||0,brawlTaught=!!saved.brawlTaught,brawlTapUntil=0,brawlTapDirection=0;
-const brawlPad=new DirectionPad(),actionBuffer=new ActionBuffer(.16);
+const brawlPad=new DirectionPad(),tablePad=new DirectionPad(),dragPointer=new PointerOwner(),actionBuffer=new ActionBuffer(.16);
 const matchSettings={race:{difficulty:difficultyKey(saved.matchSettings?.race?.difficulty),map:mapFor('race',saved.matchSettings?.race?.map).id},brawl:{difficulty:difficultyKey(saved.matchSettings?.brawl?.difficulty),map:mapFor('brawl',saved.matchSettings?.brawl?.map).id}};
 const matchRecords=saved.matchRecords||{};
 let screen='loading',game=null,preview='idle',previewTime=0,clock=0,last=0,width=600,height=900,ratio=1,dragging=false,camera=250,walkHeld=0;
@@ -91,7 +93,7 @@ $('loading-cat').onclick=()=>{const b=$('loading-cat');b.classList.remove('petti
 $('loading-cat').addEventListener('animationend',()=>$('loading-cat').classList.remove('petting'));
 $('retry-load').onclick=load;
 function syncHome(){document.querySelectorAll('[data-game]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.game===mode));const records={table:best,fish:fishBest,jump:jumpBest};document.querySelectorAll('[data-record]').forEach(el=>{const m=el.dataset.record,n=m==='brawl'?brawlBest:raceBest;el.textContent=['race','brawl'].includes(m)?(n?`最佳第 ${n} 名`:m==='brawl'?'6 猫混战 · 人机':'3 猫同跑 · 人机'):`纪录 ${records[m]}`;});$('start').innerHTML=`${{fish:'去偷吃',table:'开始捣蛋',jump:'出去跳一跳',race:'去跑酷',brawl:'去开打'}[mode]} <span aria-hidden="true">▶</span>`;document.querySelectorAll('.shelf-dots i').forEach((el,i)=>el.classList.toggle('current',i===MODES.indexOf(mode)));document.querySelector(`[data-game="${mode}"]`)?.scrollIntoView({block:'nearest',inline:'center',behavior:motion.matches?'instant':'smooth'});}
-function clearJumpInput(){if(game&&mode==='jump')cancelJump(game);jumpPointer=null;jumpKey=false;racePointer=null;brawlPad.clear();actionBuffer.clear();brawlTapUntil=0;document.querySelectorAll('.pressed').forEach(b=>b.classList.remove('pressed'));}
+function clearJumpInput(){if(game&&mode==='jump')cancelJump(game);if(game&&mode==='fish'&&dragging)retractPaw(game);dragPointer.clear();dragging=false;tablePad.clear();walkHeld=0;jumpPointer=null;jumpKey=false;racePointer=null;brawlPad.clear();actionBuffer.clear();brawlTapUntil=0;document.querySelectorAll('.pressed').forEach(b=>b.classList.remove('pressed'));}
 function show(next){clearJumpInput();screen=next;audio.setScene(next);dragging=false;walkHeld=0;keys.clear();particles.length=0;for(const id of ['loading','home','picker','play'])$(id).hidden=id!==next;$('paused').hidden=true;$('result').hidden=true;if(next==='home'){syncHome();game=null;$('scene').setAttribute('aria-label','客厅里的猫猫');}if(next==='picker')previewTime=0;}
 document.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>{mode=b.dataset.game;syncHome();save();sound('tap');});
 $('shelf-next').onclick=()=>{mode=MODES[(MODES.indexOf(mode)+1)%MODES.length];syncHome();save();sound('tap');};
@@ -161,9 +163,9 @@ function updateTargets(){
   }
 }
 function point(e){const r=canvas.getBoundingClientRect();const x=(e.clientX-r.left)/r.width*600;return mode==='fish'?{x,y:unprojectFishY((e.clientY-r.top)/r.height*900,ratio)}:{x:unprojectX(x,camera),y:TABLE_Y};}
-function pointerDown(e){if(screen!=='play'||!game||game.paused||mode==='brawl')return;if(mode==='race'){if(racePointer||e.button>0)return;e.preventDefault();racePointer={id:e.pointerId,x:e.clientX,y:e.clientY,acted:false};e.currentTarget.setPointerCapture(e.pointerId);return;}if(mode==='jump'){if(jumpPointer!==null||jumpKey||e.button>0)return;if(beginJump(game)){e.preventDefault();jumpPointer=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);}return;}const p=point(e);if(mode==='fish'){dragging=beginReach(game,p.x,p.y);}else{dragging=true;moveTo(game,p.x,p.y);}if(dragging){e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);}}
-function pointerMove(e){if(mode==='race'){const p=racePointer;if(p?.id===e.pointerId&&!p.acted){const dx=e.clientX-p.x,dy=e.clientY-p.y;if(Math.max(Math.abs(dx),Math.abs(dy))>22){requestAction(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'slide':'jump'));p.acted=true;}}return;}if(mode==='jump')return;if(dragging&&game){const p=point(e);if(mode==='fish')aimPaw(game,p.x,p.y);else moveTo(game,p.x,p.y);}}
-function pointerUp(e){if(mode==='race'){if(racePointer?.id===e.pointerId){if(e.type==='pointerup'&&!racePointer.acted)requestAction('jump');racePointer=null;}return;}if(mode==='jump'){if(e.pointerId===jumpPointer){jumpPointer=null;if(e.type==='pointerup')releaseJump(game);else cancelJump(game);}return;}if(dragging&&mode==='fish'&&game)retractPaw(game);dragging=false;}
+function pointerDown(e){if(screen!=='play'||!game||game.status!=='play'||game.paused||mode==='brawl'||e.button>0)return;if(mode==='race'){if(racePointer)return;e.preventDefault();racePointer={id:e.pointerId,x:e.clientX,y:e.clientY,acted:false};e.currentTarget.setPointerCapture(e.pointerId);return;}if(mode==='jump'){if(jumpPointer!==null||jumpKey)return;if(beginJump(game)){e.preventDefault();jumpPointer=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);}return;}if(!dragPointer.claim(e.pointerId))return;const p=point(e);if(mode==='fish'){dragging=beginReach(game,p.x,p.y);}else{dragging=true;moveTo(game,p.x,p.y);}if(dragging){e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);}else dragPointer.clear();}
+function pointerMove(e){if(screen!=='play'||!game||game.paused)return;if(mode==='race'){const p=racePointer;if(p?.id===e.pointerId&&!p.acted){const dx=e.clientX-p.x,dy=e.clientY-p.y;if(Math.max(Math.abs(dx),Math.abs(dy))>22){requestAction(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'slide':'jump'));p.acted=true;}}return;}if(mode==='jump')return;if(dragging&&dragPointer.owns(e.pointerId)){e.preventDefault();const p=point(e);if(mode==='fish')aimPaw(game,p.x,p.y);else moveTo(game,p.x,p.y);}}
+function pointerUp(e){if(mode==='race'){if(racePointer?.id===e.pointerId){if(e.type==='pointerup'&&!racePointer.acted)requestAction('jump');racePointer=null;}return;}if(mode==='jump'){if(e.pointerId===jumpPointer){jumpPointer=null;if(game){if(e.type==='pointerup')releaseJump(game);else cancelJump(game);}}return;}if(!dragPointer.release(e.pointerId))return;if(dragging&&mode==='fish'&&game)retractPaw(game);dragging=false;}
 for(const el of [canvas,$('fish-paw'),$('jump-press')]){el.addEventListener('pointerdown',pointerDown);el.addEventListener('pointermove',pointerMove);for(const event of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(event,pointerUp);}
 $('fish-paw').onclick=e=>{if(e.detail===0&&game&&mode==='fish')beginReach(game,game.paw.x,game.paw.y);};
 function controlsReady(){return screen==='play'&&game?.status==='play'&&!game.paused&&(mode==='brawl'?game.phase==='fight'&&game.cats[0].hp>0:mode==='race'&&game.phase==='run');}
@@ -226,11 +228,17 @@ const keys=new Set();document.addEventListener('keydown',e=>{
   if(e.repeat)return;
   if(e.key==='e')$('hide').click();
   if(e.key===' '){const p=game.props.filter(p=>!p.gone).sort((a,b)=>Math.hypot(a.x-game.cat.x,a.y-game.cat.y)-Math.hypot(b.x-game.cat.x,b.y-game.cat.y))[0];if(p)targetProp(game,p.id);}
-});document.addEventListener('keyup',e=>{keys.delete(e.key);keys.delete(e.key.toLowerCase());if(e.key===' '&&jumpKey){e.preventDefault();jumpKey=false;if(game&&mode==='jump')releaseJump(game);}});window.addEventListener('blur',()=>{keys.clear();walkHeld=0;clearJumpInput();});
+});document.addEventListener('keyup',e=>{keys.delete(e.key);keys.delete(e.key.toLowerCase());if(e.key===' '&&jumpKey){e.preventDefault();jumpKey=false;if(game&&mode==='jump')releaseJump(game);}});window.addEventListener('blur',pause);
+bindDirectionPad(document.querySelector('.walk-buttons'),tablePad,{enabled:()=>mode==='table'&&screen==='play'&&game?.status==='play'&&!game.paused&&!game.tutorial,onChange:dir=>{
+  const wasHeld=walkHeld;walkHeld=dir;
+  if(game&&mode==='table'){
+    if(dir)moveTo(game,game.cat.x+dir*35,TABLE_Y);
+    else if(wasHeld&&!game.cat.pending)moveTo(game,game.cat.x,TABLE_Y);
+  }
+  $('move-left').classList.toggle('pressed',dir<0);$('move-right').classList.toggle('pressed',dir>0);
+}});
 for(const [id,direction] of [['move-left',-1],['move-right',1]]){
-  const b=$(id);b.addEventListener('pointerdown',e=>{walkHeld=direction;b.setPointerCapture(e.pointerId);if(game)moveTo(game,game.cat.x+direction*35,TABLE_Y);});
-  for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,()=>walkHeld=0);
-  b.addEventListener('click',()=>{if(game)moveTo(game,game.cat.x+direction*55,TABLE_Y);});
+  $(id).onclick=e=>{if(e.detail===0&&game&&mode==='table')moveTo(game,game.cat.x+direction*55,TABLE_Y);};
 }
 function updateHud(){
   if(!game)return;const s=game;

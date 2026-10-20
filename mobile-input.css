@@ -1,0 +1,22 @@
+/* Play surface, not a selectable document. Include WebKit prefixes for iPhone. */
+html,body{overscroll-behavior:none}
+#game{
+  touch-action:pan-x pan-y;
+  overscroll-behavior:none;
+  -webkit-tap-highlight-color:transparent;
+}
+#game,#game *{
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+#game img,#game svg,#game canvas{-webkit-user-drag:none}
+/* Keep the menu's native carousel; no ancestor is touch-action:none. */
+#home .game-select,#home .game-select *{touch-action:pan-x}
+#scene,#play,#play *{touch-action:none}
+#game input,#game textarea,#game [contenteditable="true"]{
+  -webkit-user-select:text;
+  user-select:text;
+  -webkit-touch-callout:default;
+}
+#game a[href]{-webkit-touch-callout:default}

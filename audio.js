@@ -1,14 +1,37 @@
 // Local licensed recordings. One shared mixer, bounded voices, no oscillator beeps.
-export const SAMPLES=['meow-jump','meow-hurt','land','drop','ceramic','shield','tap','pluck','whoosh','lane','pickup','win','lose','tick'];
+export const CAT_CALLS={
+  'meow-jump':['meow-jump','meow-mew','meow-chirp'],
+  'meow-slide':['meow-chirp','meow-short','meow-mew'],
+  'meow-charge':['meow-short','meow-jump','meow-mew'],
+  'meow-hurt':['meow-hurt','meow-grumble','meow-short'],
+};
+export const SAMPLES=[...new Set(Object.values(CAT_CALLS).flat()),'land','drop','ceramic','shield','tap','pluck','whoosh','lane','pickup','win','lose','tick'];
 export const MUSIC='./audio/cat-bgm.mp3';
 export const MAX_VOICES=8;
+export class CatCallDeck{
+  constructor(random=Math.random){this.random=random;this.bags=new Map();this.lastByCue=new Map();this.last=null;}
+  next(key,available=()=>true){
+    const pool=(CAT_CALLS[key]||[]).filter(available);
+    if(!pool.length)return null;
+    let bag=(this.bags.get(key)||[]).filter(name=>pool.includes(name));
+    if(!bag.length)bag=[...pool];
+    let choices=bag.filter(name=>name!==this.last&&name!==this.lastByCue.get(key));
+    if(!choices.length)choices=pool.filter(name=>name!==this.last&&name!==this.lastByCue.get(key));
+    if(!choices.length)choices=pool.filter(name=>name!==this.lastByCue.get(key));
+    if(!choices.length)choices=pool;
+    const name=choices[Math.min(choices.length-1,Math.floor(this.random()*choices.length))];
+    this.bags.set(key,bag.filter(n=>n!==name));this.last=name;this.lastByCue.set(key,name);
+    return name;
+  }
+}
 export function soundCue(type,kind){
   const cue=(name,gain=.55,rate=1,gap=.065)=>({name,gain,rate,gap});
   if(['charge','table','learned'].includes(type))return null;
   if(type==='fall')return cue(['mug','bottle'].includes(kind)?'ceramic':'drop',.65);
   if(type==='brawl-hit'||type==='bonk')return cue('meow-hurt',.88,1,.20);
   if(type==='shield-break')return cue('shield',.8,1,.1);
-  if(type==='brawl-charge'||type==='race-slide')return cue('whoosh',.4,1.08);
+  if(type==='brawl-charge')return cue('meow-charge',.72,1.08,.22);
+  if(type==='race-slide')return cue('meow-slide',.64,1.04,.22);
   if(type==='jump')return cue('meow-jump',.72,1,.18);
   if(type==='land')return cue('land',.45,1,.12);
   if(type==='clink')return cue('ceramic',.6,1.18,.1);
@@ -30,7 +53,7 @@ export class GameAudio{
   constructor({muted=false,fetcher=(...args)=>globalThis.fetch(...args),onStatus=()=>{}}={}){
     this.muted=muted;this.paused=false;this.visible=true;this.scene='loading';this.fetcher=fetcher;
     this.onStatus=onStatus;this.blocked=false;this.playAttempt=0;
-    this.raw=new Map();this.buffers=new Map();this.voices=[];this.recent=new Map();this.serial=0;
+    this.raw=new Map();this.buffers=new Map();this.voices=[];this.recent=new Map();this.catCalls=new CatCallDeck();
   }
   preload(){
     if(this.loading)return this.loading;
@@ -86,16 +109,19 @@ export class GameAudio{
     const cue=soundCue(type,kind);if(!cue)return false;
     const c=this.ctx,now=c.currentTime,key=cue.name;
     if(now-(this.recent.get(key)??-10)<cue.gap)return false;
-    const name=key==='hit'?['hit-a','hit-b','hit-c'][this.serial++%3]:key,buffer=this.buffers.get(name);
+    const catCall=!!CAT_CALLS[key],priority=key==='meow-hurt'?3:key==='meow-charge'?2:1;
+    // Keep hurt calls readable, but do not queue old actions to play late.
+    if(catCall&&this.catVoice&&this.catVoice.catPriority>priority)return false;
+    const name=catCall?this.catCalls.next(key,n=>this.buffers.has(n)):key,buffer=this.buffers.get(name);
     if(!buffer)return false;this.recent.set(key,now);
-    const catCall=key.startsWith('meow-');
     if(catCall&&this.catVoice){
-      if(key==='meow-jump'&&this.catVoice.catCue==='meow-hurt')return false;
-      try{this.catVoice.stop();}catch{}
+      // A short crossfade avoids clicks when a hit interrupts another meow.
+      const old=this.catVoice;this.ramp(old.catGain.gain,0,.025);
+      try{old.stop(now+.025);}catch{}
     }
     while(this.voices.length>=MAX_VOICES){try{this.voices.shift().stop();}catch{}}
     const source=c.createBufferSource(),gain=c.createGain();source.buffer=buffer;source.playbackRate.value=cue.rate;gain.gain.value=cue.gain;
-    if(catCall){source.catCue=key;this.catVoice=source;}
+    if(catCall){source.catCue=key;source.catSample=name;source.catPriority=priority;source.catGain=gain;this.catVoice=source;}
     source.connect(gain);gain.connect(this.sfx);this.voices.push(source);
     source.onended=()=>{source.disconnect();gain.disconnect();const i=this.voices.indexOf(source);if(i>=0)this.voices.splice(i,1);if(this.catVoice===source)this.catVoice=null;};
     source.start();return true;
