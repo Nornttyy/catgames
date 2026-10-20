@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="match.css?v=controls-7">
 <link rel="stylesheet" href="controls.css?v=swipe-1">
 <link rel="stylesheet" href="mobile-input.css?v=touch-1">
+<link rel="stylesheet" href="economy.css?v=coins-1">
 </head>
 <body>
 <main id="game" aria-label="小猫游戏多">
@@ -41,6 +42,7 @@
     <header class="home-brand"><h1><img src="assets/title-catgames.png" alt="小猫游戏多" width="924" height="572" decoding="async" fetchpriority="high"></h1></header>
     <button id="learn" class="round home-help" aria-label="怎么玩">?</button>
     <button id="sound-home" class="round sound" aria-label="关闭声音">♫</button>
+    <button id="home-wallet" class="coin-balance" aria-label="金币钱包"><span class="coin-icon" aria-hidden="true"><svg class="icon"><use href="#icon-paw"/></svg></span><b data-coins>0</b><span class="coin-plus" aria-hidden="true">+</span></button>
     <button id="home-cat" class="home-cat" aria-label="选择猫咪毛色"></button>
     <button id="wardrobe" class="home-wardrobe"><span class="fur-swatches" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>换只猫</span></button>
     <div class="game-select" role="group" aria-label="选择小游戏">
@@ -55,10 +57,17 @@
     <button id="start" class="primary">去偷吃 <span aria-hidden="true">▶</span></button>
   </section>
   <section id="picker" class="layer" hidden aria-label="猫猫毛色与动作">
-    <div class="picker-head"><button id="close-picker" class="round" aria-label="返回主页">‹</button><h2>挑一只猫</h2><span></span></div>
+    <div class="picker-head"><button id="close-picker" class="round" aria-label="返回主页">‹</button><h2>挑一只猫</h2><span class="coin-balance" aria-label="金币余额"><span class="coin-icon" aria-hidden="true"><svg class="icon"><use href="#icon-paw"/></svg></span><b data-coins>0</b></span></div>
     <div class="picker-bottom"><div class="colors" role="group" aria-label="选择毛色">
-      <button data-color="gray" aria-pressed="true"><i style="--fur:#b3ada5"></i>灰白</button><button data-color="orange" aria-pressed="false"><i style="--fur:#ffb653"></i>橘白</button><button data-color="cream" aria-pressed="false"><i style="--fur:#fff2cf"></i>奶白</button><button data-color="black" aria-pressed="false"><i style="--fur:#34343d"></i>黑猫</button>
-    </div><div class="motions" role="group" aria-label="预览动作"><button data-motion="idle" aria-pressed="true">发呆</button><button data-motion="walk" aria-pressed="false">走路</button><button data-motion="push" aria-pressed="false">出爪</button><button data-motion="hide" aria-pressed="false">躲好</button></div><button id="select-cat" class="primary">就选这只</button></div>
+      <button data-color="black" aria-pressed="true"><i style="--fur:#48474d"></i><strong>黑猫</strong><small>已拥有</small></button>
+      <button data-color="gray" aria-pressed="false"><i style="--fur:#b3ada5"></i><strong>灰白</strong><small>180 金币</small></button>
+      <button data-color="orange" aria-pressed="false"><i style="--fur:#ffb653"></i><strong>橘白</strong><small>360 金币</small></button>
+      <button data-color="cream" aria-pressed="false"><i style="--fur:#fff2cf"></i><strong>奶白</strong><small>600 金币</small></button>
+    </div><div class="motions" role="group" aria-label="预览动作"><button data-motion="idle" aria-pressed="true">发呆</button><button data-motion="walk" aria-pressed="false">走路</button><button data-motion="push" aria-pressed="false">出爪</button><button data-motion="hide" aria-pressed="false">躲好</button></div>
+      <p id="picker-note">不同毛色，能力一样</p>
+      <button id="select-cat" class="primary">就选这只</button>
+      <button id="picker-reward" class="reward-button" hidden><span class="reward-label">模拟广告</span><span>补给 +40 金币</span></button>
+    </div>
   </section>
   <section id="play" class="layer" hidden aria-label="桌子捣蛋">
     <div class="hud"><div class="score"><small>捣蛋分</small><strong id="score">0</strong></div><div class="timer"><span id="time">60</span><small>秒</small></div><button id="pause" class="round" aria-label="暂停游戏"><svg class="icon" aria-hidden="true"><use href="#icon-pause"/></svg></button></div>
@@ -99,6 +108,25 @@
   </section>
   <section id="match-setup" class="shade" hidden aria-label="选择地图和难度"><div class="paper match-paper"><header><h2 id="match-title">跑一场</h2><button id="match-close" class="round" aria-label="返回主菜单">×</button></header><div id="match-maps" role="group" aria-label="地图"></div><div class="difficulty-choices" role="group" aria-label="难度"><button data-difficulty="casual">休闲</button><button data-difficulty="normal">普通</button><button data-difficulty="hard">困难</button></div><p id="match-record"></p><button id="match-start" class="primary">出发 ▶</button></div></section>
   <section id="paused" class="shade" hidden><div class="paper"><h2>暂停</h2><button id="resume" class="primary">继续</button><button id="pause-home" class="secondary">回到客厅</button><button id="sound-pause" class="text-button sound">关闭声音</button><a href="audio-credits.html" target="_blank" rel="noopener" style="display:block;font-size:12px;color:#776c5e;margin-top:12px">声音署名</a></div></section>
-  <section id="result" class="shade" hidden aria-label="本局结算"><div class="confetti" aria-hidden="true"></div><div class="paper result-paper"><div class="result-mark" aria-hidden="true"><svg class="icon"><use href="#icon-cup"/></svg></div><h2 id="result-title"></h2><strong id="result-score">0</strong><span id="result-record" hidden>刷新纪录</span><div id="result-stats"></div><button id="replay" class="primary">再来一次</button><button id="result-home" class="secondary">回到客厅</button></div></section>
-</main><script type="module" src="app.js?v=canvas-return-swipe-audio-4"></script>
+  <section id="result" class="shade" hidden aria-label="本局结算"><div class="confetti" aria-hidden="true"></div><div class="paper result-paper"><div class="result-mark" aria-hidden="true"><svg class="icon"><use href="#icon-cup"/></svg></div><h2 id="result-title"></h2><strong id="result-score">0</strong><span id="result-record" hidden>刷新纪录</span><div id="result-stats"></div>
+    <div id="result-coins"><span id="result-coins-label">本局金币 · 已入账</span><strong class="coin-balance"><span class="coin-icon" aria-hidden="true"><svg class="icon"><use href="#icon-paw"/></svg></span><b id="result-coins-value">+0</b></strong></div>
+    <p id="result-coins-note" hidden>完成操作可以赚金币</p>
+    <button id="result-double" class="reward-button" hidden><span class="reward-label">模拟广告</span><span id="result-double-copy">金币翻倍</span></button>
+    <button id="replay" class="primary">再来一次</button><button id="result-home" class="secondary">回到客厅</button></div></section>
+  <section id="wallet" class="shade" hidden role="dialog" aria-modal="true" aria-labelledby="wallet-title"><div class="paper wallet-paper"><header><h2 id="wallet-title">小猫零钱包</h2><button id="wallet-close" class="round" aria-label="关闭金币钱包">×</button></header>
+    <div class="coin-balance wallet-total"><span class="coin-icon" aria-hidden="true"><svg class="icon"><use href="#icon-paw"/></svg></span><b data-coins>0</b></div>
+    <p>玩小游戏赚金币，解锁喜欢的毛色。</p>
+    <button id="wallet-reward" class="reward-button"><span class="reward-label">模拟广告</span><span>领 40 金币</span></button>
+    <p id="wallet-limit">今日补给 3 / 3</p>
+  </div></section>
+  <section id="reward-ad" class="shade" hidden role="dialog" aria-modal="true" aria-labelledby="ad-title" aria-describedby="ad-disclosure">
+    <div class="paper ad-paper"><header class="ad-top"><span class="ad-tag">模拟激励广告</span><button id="ad-close" class="round" aria-label="关闭模拟广告，不领取奖励">×</button></header>
+      <h2 id="ad-title"></h2><div class="ad-stage" aria-hidden="true"><div class="ad-cat"></div><img id="ad-prop" alt=""></div><p id="ad-copy"></p>
+      <div class="ad-bottom"><span>可随时关闭</span><span id="ad-countdown">5 秒</span></div>
+      <progress id="ad-progress" aria-label="模拟广告进度" max="5" value="0"></progress>
+      <button id="ad-claim" class="primary" disabled>完成后领取</button>
+      <p id="ad-disclosure" class="ad-explain">仅功能演示 · 非真实广告 · 不跳转</p>
+    </div>
+  </section>
+</main><script type="module" src="app.js?v=canvas-return-cat-coins-5"></script>
 </body></html>

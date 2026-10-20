@@ -21,10 +21,13 @@ import {ActionBuffer,DirectionPad,bindDirectionPad} from './touch-controls.js?v=
 import {loadSave} from './save-store.js?v=canvas-return-1';
 import {installTouchGuards,PointerOwner} from './mobile-input.js?v=touch-1';
 import {bindRaceSwipes} from './race-input.js?v=swipe-1';
+import {CATS,GIFT_COINS,loadEconomy,ownsCat,equippedCat,buyCat,settleRound,doubleRound,giftsLeft,claimGift} from './economy.js?v=coins-1';
+import {bindRewardAd} from './reward-ui.js?v=coins-1';
 const $=id=>document.getElementById(id),canvas=$('scene'),ctx=canvas.getContext('2d'),root=$('game');
 installTouchGuards(root);
 const saved=loadSave();
-let color=COLORS.includes(saved.color)?saved.color:'gray',muted=!!saved.muted,best=Number(saved.best)||0,taught=!!saved.taught;
+const economy=loadEconomy(saved.economy);
+let color=equippedCat(economy,saved.color),pickerColor=color,roundId='',muted=!!saved.muted,best=Number(saved.best)||0,taught=!!saved.taught;
 const MODES=['table','fish','jump','race','brawl'];
 let mode=MODES.includes(saved.mode)?saved.mode:'brawl',fishBest=Number(saved.fishBest)||0,fishTaught=!!saved.fishTaught;
 let jumpBest=Number(saved.jumpBest)||0,jumpTaught=!!saved.jumpTaught,jumpPointer=null,jumpKey=false;
@@ -33,8 +36,9 @@ let brawlBest=Number(saved.brawlBest)||0,brawlTaught=!!saved.brawlTaught,brawlTa
 const brawlPad=new DirectionPad(),tablePad=new DirectionPad(),dragPointer=new PointerOwner(),actionBuffer=new ActionBuffer(.16);
 const matchSettings={race:{difficulty:difficultyKey(saved.matchSettings?.race?.difficulty),map:mapFor('race',saved.matchSettings?.race?.map).id},brawl:{difficulty:difficultyKey(saved.matchSettings?.brawl?.difficulty),map:mapFor('brawl',saved.matchSettings?.brawl?.map).id}};
 const matchRecords=saved.matchRecords||{};
-let screen='loading',game=null,preview='idle',previewTime=0,clock=0,last=0,width=600,height=900,ratio=1,dragging=false,camera=250,walkHeld=0;
+let screen='loading',game=null,preview='idle',previewTime=0,pickerFloor=530,clock=0,last=0,width=600,height=900,ratio=1,dragging=false,camera=250,walkHeld=0;
 const images={},effects=[],buttons=new Map(),audio=new GameAudio({muted,onStatus:syncSound});audio.preload();
+const rewardAd=bindRewardAd(root,{onOpen(){clearJumpInput();audio.setPaused(true);},onClose(){audio.setPaused(!!game?.paused);}});
 const fxCanvas=$('feedback'),fxCtx=fxCanvas.getContext('2d'),particles=[],motion=matchMedia('(prefers-reduced-motion: reduce)'),uiAnimations=new WeakMap();
 let lastRank=6,wasAir=false;
 function pulse(el,kind='good'){
@@ -74,9 +78,47 @@ function showResult(summary){
   if((summary.win||summary.record)&&!motion.matches)for(let i=0;i<8;i++){
     const bit=document.createElement('i');bit.style.setProperty('--x',`${(i*37)%100}%`);bit.style.setProperty('--delay',`${(i%7)*.065}s`);bit.style.setProperty('--c',['#ffd45e','#80d9bb','#ff9b82','#fff8da'][i%4]);confetti.append(bit);
   }
-  $('result').hidden=false;
+  syncEconomy();$('result').hidden=false;
 }
-function save(){try{localStorage.setItem('cat-games-v1',JSON.stringify({...saved,color,muted,best,taught,mode,fishBest,fishTaught,jumpBest,jumpTaught,raceBest,raceTaught,brawlBest,brawlTaught,matchSettings,matchRecords}))}catch{}}
+function save(){try{localStorage.setItem('cat-games-v1',JSON.stringify({...saved,color,economy,muted,best,taught,mode,fishBest,fishTaught,jumpBest,jumpTaught,raceBest,raceTaught,brawlBest,brawlTaught,matchSettings,matchRecords}))}catch{}}
+function syncEconomy(){
+  document.querySelectorAll('[data-coins]').forEach(el=>el.textContent=economy.coins.toLocaleString('zh-CN'));
+  const left=giftsLeft(economy);$('wallet-limit').textContent=`今日补给 ${left} / 3`;
+  $('wallet-reward').disabled=left===0;$('picker-reward').disabled=left===0;
+  $('picker-reward').querySelector('span:last-child').textContent=left?`补给 +${GIFT_COINS} 金币`:'今日补给已领完';
+  const round=economy.lastRound,isCurrent=round?.id===roundId,coins=isCurrent?round.coins:0,doubled=isCurrent&&round.doubled;
+  $('result-coins-value').textContent=`+${coins*(doubled?2:1)}`;
+  $('result-coins-label').textContent=doubled?'翻倍金币 · 已入账':'本局金币 · 已入账';
+  $('result-coins-note').hidden=coins>0;
+  $('result-double').hidden=coins<=0||doubled;
+  $('result-double-copy').textContent=`再领 ${coins} · 金币翻倍`;
+  if(screen==='picker')syncPicker();
+}
+function giftAd(placement){
+  if(!giftsLeft(economy))return;
+  rewardAd.open({placement,coins:GIFT_COINS,onClaim(){
+    const earned=claimGift(economy);if(!earned)return;
+    save();syncEconomy();pulse($('home-wallet'));
+  }});
+}
+$('home-wallet').onclick=()=>{syncEconomy();$('home').inert=true;$('wallet').hidden=false;$('wallet-close').focus();sound('tap');};
+function closeWallet(){$('wallet').hidden=true;$('home').inert=false;$('home-wallet').focus();}
+$('wallet-close').onclick=closeWallet;
+$('wallet-reward').onclick=()=>giftAd('wallet');
+$('picker-reward').onclick=()=>giftAd('picker');
+$('result-double').onclick=()=>{
+  const id=roundId,round=economy.lastRound;
+  if(!round||round.id!==id||round.doubled||!round.coins)return;
+  rewardAd.open({placement:'result',coins:round.coins,onClaim(){if(doubleRound(economy,id)){save();syncEconomy();pulse($('result-coins'));}}});
+};
+document.addEventListener('keydown',e=>{
+  if($('wallet').hidden||rewardAd.isOpen)return;
+  if(e.key==='Escape'){e.preventDefault();closeWallet();}
+  if(e.key==='Tab'){
+    const choices=[$('wallet-close'),$('wallet-reward')].filter(b=>!b.disabled),index=choices.indexOf(document.activeElement);
+    e.preventDefault();choices[(index+(e.shiftKey?-1:1)+choices.length)%choices.length].focus();
+  }
+});
 const files=[...new Set(['brawl-shelf.png','brawl-kitchen.webp','item-food.png','item-shield.png','item-pepper.png','item-speed.png','title-catgames.png','room-side.webp','menu-nook.webp','race-track-vertical.webp','race-cats-back.png','race-hurdle.png','race-gate.png','jump-yard.webp','jump-grass.png','jump-spikes.png','table-side.png','kitchen-side.webp','fish-snack.png',...Object.values(FISH_PROP_ART).map(p=>p.file),...COLORS.flatMap(c=>[`cat-${c}.png`,`cat-fish-${c}.png`,`paw-round-${c}.png`]),...['mug','bottle','books','duck','cushion','popcorn'].map(p=>`${p}-side.png`),'owner-0.png','owner-1.png','owner-2.png'])];
 async function load(){
   $('retry-load').hidden=true;$('loading').dataset.error='false';$('load-label').textContent='正在开门…';
@@ -95,22 +137,48 @@ $('loading-cat').addEventListener('animationend',()=>$('loading-cat').classList.
 $('retry-load').onclick=load;
 function syncHome(){document.querySelectorAll('[data-game]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.game===mode));const records={table:best,fish:fishBest,jump:jumpBest};document.querySelectorAll('[data-record]').forEach(el=>{const m=el.dataset.record,n=m==='brawl'?brawlBest:raceBest;el.textContent=['race','brawl'].includes(m)?(n?`最佳第 ${n} 名`:m==='brawl'?'6 猫混战 · 人机':'3 猫同跑 · 人机'):`纪录 ${records[m]}`;});$('start').innerHTML=`${{fish:'去偷吃',table:'开始捣蛋',jump:'出去跳一跳',race:'去跑酷',brawl:'去开打'}[mode]} <span aria-hidden="true">▶</span>`;document.querySelectorAll('.shelf-dots i').forEach((el,i)=>el.classList.toggle('current',i===MODES.indexOf(mode)));document.querySelector(`[data-game="${mode}"]`)?.scrollIntoView({block:'nearest',inline:'center',behavior:motion.matches?'instant':'smooth'});}
 function clearJumpInput(){if(game&&mode==='jump')cancelJump(game);if(game&&mode==='fish'&&dragging)retractPaw(game);dragPointer.clear();dragging=false;tablePad.clear();walkHeld=0;jumpPointer=null;jumpKey=false;raceSwipes?.clear();brawlPad.clear();actionBuffer.clear();brawlTapUntil=0;document.querySelectorAll('.pressed').forEach(b=>b.classList.remove('pressed'));}
-function show(next){clearJumpInput();screen=next;audio.setScene(next);dragging=false;walkHeld=0;keys.clear();particles.length=0;for(const id of ['loading','home','picker','play'])$(id).hidden=id!==next;$('paused').hidden=true;$('result').hidden=true;if(next==='home'){syncHome();game=null;$('scene').setAttribute('aria-label','客厅里的猫猫');}if(next==='picker')previewTime=0;}
+function show(next){clearJumpInput();screen=next;audio.setScene(next);dragging=false;walkHeld=0;keys.clear();particles.length=0;for(const id of ['loading','home','picker','play'])$(id).hidden=id!==next;$('paused').hidden=true;$('result').hidden=true;$('wallet').hidden=true;$('home').inert=false;if(next==='home'){syncHome();game=null;$('scene').setAttribute('aria-label','客厅里的猫猫');}if(next==='picker'){previewTime=0;pickerColor=color;}syncEconomy();}
 document.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>{mode=b.dataset.game;syncHome();save();sound('tap');});
 $('shelf-next').onclick=()=>{mode=MODES[(MODES.indexOf(mode)+1)%MODES.length];syncHome();save();sound('tap');};
-function resize(){const rect=root.getBoundingClientRect();width=rect.width;height=rect.height;const dpr=Math.min(2,devicePixelRatio||1);for(const [c,context] of [[canvas,ctx],[fxCanvas,fxCtx]]){c.width=Math.round(width*dpr);c.height=Math.round(height*dpr);context.setTransform(dpr*width/600,0,0,dpr*height/900,0,0);}ratio=(width/600)/(height/900);if(mode==='brawl'&&game)setBrawlViewport(game,ratio);const hit=homeLayout(ratio).hit;Object.assign($('home-cat').style,{left:`${hit.x/6}%`,top:`${hit.y/9}%`,width:`${hit.w/6}%`,height:`${hit.h/9}%`});}
+function resize(){const rect=root.getBoundingClientRect();width=rect.width;height=rect.height;const dpr=Math.min(2,devicePixelRatio||1);for(const [c,context] of [[canvas,ctx],[fxCanvas,fxCtx]]){c.width=Math.round(width*dpr);c.height=Math.round(height*dpr);context.setTransform(dpr*width/600,0,0,dpr*height/900,0,0);}ratio=(width/600)/(height/900);if(mode==='brawl'&&game)setBrawlViewport(game,ratio);const hit=homeLayout(ratio).hit;Object.assign($('home-cat').style,{left:`${hit.x/6}%`,top:`${hit.y/9}%`,width:`${hit.w/6}%`,height:`${hit.h/9}%`});layoutPicker();}
 new ResizeObserver(resize).observe(root);
 function unlock(){audio.unlock();}
 function sound(type,kind='mug'){audio.play(type,kind);}
 document.addEventListener('pointerdown',unlock,{passive:true});document.addEventListener('keydown',unlock);
 function syncSound(){document.querySelectorAll('.sound').forEach(el=>{const blocked=audio.needsGesture,label=blocked?'开启音乐':muted?'打开声音':'关闭声音';el.dataset.blocked=String(blocked);el.setAttribute('aria-label',label);el.textContent=el.id==='sound-home'?(muted||blocked?'♪':'♫'):label;});}
 document.querySelectorAll('.sound').forEach(el=>el.onclick=()=>{if(el.dataset.blocked==='true'){muted=false;audio.setMuted(false);audio.unlock();}else{muted=!muted;audio.setMuted(muted);}syncSound();save();});syncSound();
-function syncPicker(){document.querySelectorAll('[data-color]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.color===color));document.querySelectorAll('[data-motion]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.motion===preview));}
-$('wardrobe').onclick=()=>{show('picker');syncPicker();};$('close-picker').onclick=$('select-cat').onclick=()=>{save();show('home');sound('tap');};
+function syncPicker(){
+  document.querySelectorAll('[data-color]').forEach(b=>{
+    const cat=CATS.find(c=>c.id===b.dataset.color),owned=ownsCat(economy,cat.id);
+    b.setAttribute('aria-pressed',cat.id===pickerColor);b.dataset.locked=String(!owned);
+    b.querySelector('small').textContent=owned?'已拥有':`${cat.price} 金币`;
+    b.setAttribute('aria-label',`${cat.label}，${owned?'已拥有':cat.price+' 金币解锁'}`);
+  });
+  document.querySelectorAll('[data-motion]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.motion===preview));
+  const cat=CATS.find(c=>c.id===pickerColor),owned=ownsCat(economy,pickerColor),short=Math.max(0,cat.price-economy.coins);
+  $('select-cat').disabled=!owned&&short>0;
+  $('select-cat').textContent=owned?'就选这只':short?`还差 ${short} 金币`:`${cat.price} 金币解锁`;
+  $('picker-note').textContent=owned?'不同毛色，能力一样':'可预览动作 · 解锁后永久拥有';
+  $('picker-reward').hidden=owned||short===0;
+  layoutPicker();
+}
+function layoutPicker(){
+  if(screen!=='picker')return;
+  const top=(document.querySelector('.picker-bottom').getBoundingClientRect().top-root.getBoundingClientRect().top)/height*900;
+  const tableHeight=530*(images.table?images.table.height/images.table.width:.16)*ratio;
+  pickerFloor=Math.min(530,top-tableHeight-10/height*900);
+}
+$('wardrobe').onclick=()=>{show('picker');syncPicker();};
+$('close-picker').onclick=()=>{show('home');sound('tap');};
+$('select-cat').onclick=()=>{
+  if(!ownsCat(economy,pickerColor)&&!buyCat(economy,pickerColor))return;
+  color=pickerColor;save();show('home');sound('pickup');
+};
 $('home-cat').onclick=()=>$('wardrobe').click();
-document.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{color=b.dataset.color;save();syncPicker();sound('tap');});
+document.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{pickerColor=b.dataset.color;previewTime=0;syncPicker();sound('tap');});
 document.querySelectorAll('[data-motion]').forEach(b=>b.onclick=()=>{preview=b.dataset.motion;previewTime=0;syncPicker();sound('tap');});
 function start(forceTutorial=false){
+  color=equippedCat(economy,color);roundId=crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`;
   $('match-setup').hidden=true;show('play');game=mode==='brawl'?createBrawl({color,tutorial:forceTutorial||!brawlTaught,...matchSettings.brawl,ratio}):mode==='race'?createRace({color,tutorial:forceTutorial||!raceTaught,...matchSettings.race}):mode==='jump'?createJumpGame({tutorial:forceTutorial||!jumpTaught,color}):mode==='fish'?createFishGame({tutorial:forceTutorial||!fishTaught}):createGame({tutorial:forceTutorial||!taught});
   if(mode==='brawl')document.querySelector('.brawl-meta span').textContent=mapFor(mode,game.map).name+' · '+DIFFICULTIES[game.difficulty].label;
   if(mode==='race')document.querySelector('.race-meta span').textContent='3 猫竞速 · '+DIFFICULTIES[game.difficulty].label;
@@ -299,7 +367,7 @@ function updateHud(){
   $('hide').textContent=s.cat.hidden?'已藏好':'躲起来';$('route-dot').style.left=`${s.cat.x/WORLD_WIDTH*100}%`;updateTargets();
 }
 function sprite(img,x,y,w,rotation=0,alpha=1){if(!img)return;const h=w*img.height/img.width;ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,y);ctx.scale(1,ratio);ctx.rotate(rotation);ctx.drawImage(img,-w/2,-h,w,h);ctx.restore();}
-function catSprite(x,y,w,frame,facing=1){drawCatSprite(ctx,images,color,x,y,w,frame,facing,ratio);}
+function catSprite(x,y,w,frame,facing=1){drawCatSprite(ctx,images,screen==='picker'?pickerColor:color,x,y,w,frame,facing,ratio);}
 function shadow(x,y,w){ctx.fillStyle='#75532926';ctx.beginPath();ctx.ellipse(x,y,w,w*.22*ratio,0,0,Math.PI*2);ctx.fill();}
 function table(x,y,w){const img=images.table;if(img)ctx.drawImage(img,x,y,w,w*img.height/img.width*ratio);}
 function drawScene(dt){
@@ -315,7 +383,7 @@ function drawScene(dt){
     if(preview==='push')f=frameFor('push',t%1.8);
     if(preview==='hide'){const phase=t%3.7;f=phase<1.8?frameFor('hide',phase):frameFor('rise',phase-1.8);}
     if(preview==='walk')x+=Math.sin(t*.9)*30;
-    table(35,530,530);catSprite(x,530,315,f);
+    table(35,pickerFloor,530);catSprite(x,pickerFloor,315,f);
   }else if(game){
     const o=game.owner;
     if(o.phase==='look'||o.phase==='warning'){
@@ -354,6 +422,7 @@ function handleEvents(){for(const e of game.events.splice(0)){
   if(e.type==='clink')effects.push({text:'!',x:e.x,y:e.y-15,vx:0,vy:-30,age:0,life:.45});
   if(e.type==='learned'){if(mode==='race')raceTaught=true;else if(mode==='jump')jumpTaught=true;else if(mode==='fish')fishTaught=true;else taught=true;save();}
   if(e.type==='end'){
+    settleRound(economy,roundId,mode,game,e.result);
     const recordKey=`${mode}:${game.map}:${game.difficulty}`;
     const summary=resultSummary(mode,game,MAPS[mode]?(matchRecords[recordKey]||0):{jump:jumpBest,fish:fishBest,table:best}[mode],e.result);
     if(MAPS[mode])matchRecords[recordKey]=matchRecords[recordKey]?Math.min(matchRecords[recordKey],game.rank):game.rank;
@@ -381,4 +450,4 @@ function loop(now){
   if(!game?.paused)tickParticles(particles,dt);
   drawScene(dt);fxCtx.clearRect(0,0,600,900);if(screen==='play')drawParticles(fxCtx,particles,ratio);requestAnimationFrame(loop);
 }
-resize();audio.unlock();load();requestAnimationFrame(loop);
+syncEconomy();save();resize();audio.unlock();load();requestAnimationFrame(loop);
